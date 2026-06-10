@@ -1,0 +1,77 @@
+{
+  "common": {
+    "app_name": "Spendly",
+    "loading": "Cargando...",
+    "error": "Error",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "back": "Atrás",
+    "confirm": "Confirmar"
+  },
+  "auth": {
+    "sign_in": "Iniciar sesión",
+    "sign_out": "Cerrar sesión",
+    "sign_in_google": "Continuar con Google",
+    "sign_in_apple": "Continuar con Apple",
+    "welcome": "Bienvenido a Spendly",
+    "subtitle": "Tomá el control de tus finanzas"
+  },
+  "tabs": {
+    "dashboard": "Inicio",
+    "expenses": "Gastos",
+    "income": "Ingresos",
+    "stats": "Estadísticas",
+    "settings": "Ajustes"
+  },
+  "dashboard": {
+    "title": "Resumen",
+    "balance": "Balance",
+    "total_expenses": "Gastos",
+    "total_income": "Ingresos",
+    "month_summary": "Resumen del mes"
+  },
+  "expenses": {
+    "title": "Gastos",
+    "add": "Agregar gasto",
+    "no_expenses": "Sin gastos registrados",
+    "amount": "Monto",
+    "category": "Categoría",
+    "notes": "Notas",
+    "items": "Artículos"
+  },
+  "income": {
+    "title": "Ingresos",
+    "add": "Agregar ingreso",
+    "no_income": "Sin ingresos registrados",
+    "fixed": "Fijo",
+    "variable": "Variable"
+  },
+  "categories": {
+    "title": "Categorías",
+    "food": "Comida",
+    "services": "Servicios",
+    "education": "Educación",
+    "transport": "Transporte",
+    "health": "Salud",
+    "entertainment": "Entretenimiento",
+    "salary": "Salario",
+    "freelance": "Freelance",
+    "other": "Otro"
+  },
+  "settings": {
+    "title": "Ajustes",
+    "language": "Idioma",
+    "currency": "Moneda",
+    "account": "Cuenta",
+    "subscription": "Suscripción",
+    "privacy": "Política de privacidad",
+    "terms": "Términos de uso"
+  },
+  "premium": {
+    "upgrade": "Obtener Premium",
+    "feature_locked": "Función Premium",
+    "unlock_message": "Actualizá a Premium para acceder a esta función"
+  }
+}

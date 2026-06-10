@@ -1,0 +1,77 @@
+{
+  "common": {
+    "app_name": "Spendly",
+    "loading": "Loading...",
+    "error": "Error",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "confirm": "Confirm"
+  },
+  "auth": {
+    "sign_in": "Sign in",
+    "sign_out": "Sign out",
+    "sign_in_google": "Continue with Google",
+    "sign_in_apple": "Continue with Apple",
+    "welcome": "Welcome to Spendly",
+    "subtitle": "Take control of your finances"
+  },
+  "tabs": {
+    "dashboard": "Home",
+    "expenses": "Expenses",
+    "income": "Income",
+    "stats": "Stats",
+    "settings": "Settings"
+  },
+  "dashboard": {
+    "title": "Summary",
+    "balance": "Balance",
+    "total_expenses": "Expenses",
+    "total_income": "Income",
+    "month_summary": "Month summary"
+  },
+  "expenses": {
+    "title": "Expenses",
+    "add": "Add expense",
+    "no_expenses": "No expenses recorded",
+    "amount": "Amount",
+    "category": "Category",
+    "notes": "Notes",
+    "items": "Items"
+  },
+  "income": {
+    "title": "Income",
+    "add": "Add income",
+    "no_income": "No income recorded",
+    "fixed": "Fixed",
+    "variable": "Variable"
+  },
+  "categories": {
+    "title": "Categories",
+    "food": "Food",
+    "services": "Services",
+    "education": "Education",
+    "transport": "Transport",
+    "health": "Health",
+    "entertainment": "Entertainment",
+    "salary": "Salary",
+    "freelance": "Freelance",
+    "other": "Other"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "currency": "Currency",
+    "account": "Account",
+    "subscription": "Subscription",
+    "privacy": "Privacy policy",
+    "terms": "Terms of use"
+  },
+  "premium": {
+    "upgrade": "Get Premium",
+    "feature_locked": "Premium Feature",
+    "unlock_message": "Upgrade to Premium to access this feature"
+  }
+}
