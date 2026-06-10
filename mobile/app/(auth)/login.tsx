@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 import { makeRedirectUri } from 'expo-auth-session';
 import { supabase } from '../../src/lib/supabase/client';
 
@@ -19,7 +20,17 @@ export default function LoginScreen() {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
 
-  const redirectTo = makeRedirectUri({ scheme: 'spendly', path: 'auth/callback' });
+  const redirectTo = makeRedirectUri({ path: 'auth/callback' });
+
+  async function handleOAuthResult(result: WebBrowser.WebBrowserAuthSessionResult) {
+    if (result.type !== 'success' || !result.url) return;
+    const parsed = Linking.parse(result.url);
+    const code = parsed.queryParams?.code as string | undefined;
+    if (code) {
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      if (error) throw error;
+    }
+  }
 
   async function signInWithGoogle() {
     try {
@@ -31,11 +42,7 @@ export default function LoginScreen() {
       if (error) throw error;
       if (data?.url) {
         const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-        if (result.type === 'success' && result.url) {
-          const url = new URL(result.url);
-          const code = url.searchParams.get('code');
-          if (code) await supabase.auth.exchangeCodeForSession(code);
-        }
+        await handleOAuthResult(result);
       }
     } catch (e: any) {
       Alert.alert(t('common.error'), e.message);
@@ -54,11 +61,7 @@ export default function LoginScreen() {
       if (error) throw error;
       if (data?.url) {
         const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-        if (result.type === 'success' && result.url) {
-          const url = new URL(result.url);
-          const code = url.searchParams.get('code');
-          if (code) await supabase.auth.exchangeCodeForSession(code);
-        }
+        await handleOAuthResult(result);
       }
     } catch (e: any) {
       Alert.alert(t('common.error'), e.message);
