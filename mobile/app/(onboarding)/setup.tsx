@@ -27,7 +27,10 @@ export default function SetupScreen() {
     setErrorMsg('');
     try {
       setLoading(true);
-      await supabase.from('profiles').update({ currency, language }).eq('id', user.id);
+      await supabase
+        .from('profiles')
+        .update({ currency, language, onboarding_completed: true })
+        .eq('id', user.id);
       await supabase.rpc('seed_default_categories', { p_user_id: user.id });
       i18n.changeLanguage(language);
       router.replace('/(tabs)');

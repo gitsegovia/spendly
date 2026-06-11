@@ -9,6 +9,7 @@ export interface Profile {
   plan: Plan;
   currency: string;
   language: Language;
+  onboarding_completed: boolean;
   created_at: string;
   updated_at: string;
 }

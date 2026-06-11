@@ -36,7 +36,7 @@ export default function Index() {
   }
 
   if (!session) return <Redirect href="/(auth)/login" />;
-  if (!profile) return <Redirect href="/(onboarding)/setup" />;
+  if (!profile || !profile.onboarding_completed) return <Redirect href="/(onboarding)/welcome" />;
   return <Redirect href="/(tabs)" />;
 }
 
