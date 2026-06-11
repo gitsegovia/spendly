@@ -2,11 +2,13 @@ import { useState } from 'react';
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   StyleSheet,
   Alert,
   ActivityIndicator,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import * as WebBrowser from 'expo-web-browser';
@@ -18,39 +20,46 @@ WebBrowser.maybeCompleteAuthSession();
 export default function LoginScreen() {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
 
   const redirectTo = Linking.createURL('auth/callback');
   console.log('[Spendly] redirectTo:', redirectTo);
 
-  async function handleOAuthResult(result: WebBrowser.WebBrowserAuthSessionResult) {
-    console.log('[OAuth] result type:', result.type);
-    if (result.type === 'success') console.log('[OAuth] result url:', result.url);
-    if (result.type !== 'success' || !result.url) return;
-    const parsed = Linking.parse(result.url);
-    const code = parsed.queryParams?.code as string | undefined;
-    console.log('[OAuth] code extracted:', code ? 'YES' : 'NO');
-    if (code) {
-      const { error } = await supabase.auth.exchangeCodeForSession(code);
-      console.log('[OAuth] exchangeCode error:', error?.message ?? 'none');
-      if (error) throw error;
+  async function handleEmailAuth() {
+    if (!email || !password) {
+      Alert.alert(t('common.error'), 'Ingresá email y contraseña');
+      return;
+    }
+    try {
+      setLoading(true);
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+        Alert.alert('¡Listo!', 'Revisá tu email para confirmar tu cuenta');
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+      }
+    } catch (e: any) {
+      Alert.alert(t('common.error'), e.message);
+    } finally {
+      setLoading(false);
     }
   }
 
   async function signInWithGoogle() {
     try {
       setLoading(true);
-      console.log('[OAuth] redirectTo:', redirectTo);
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo, skipBrowserRedirect: true },
       });
-      console.log('[OAuth] signInWithOAuth error:', error?.message ?? 'none');
-      console.log('[OAuth] OAuth URL:', data?.url ? 'received' : 'missing');
       if (error) throw error;
       if (data?.url) {
-        console.log('[OAuth] opening browser...');
-        const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-        await handleOAuthResult(result);
+        // openBrowserAsync (SFSafariViewController) + deep link handler en _layout
+        await WebBrowser.openBrowserAsync(data.url);
       }
     } catch (e: any) {
       Alert.alert(t('common.error'), e.message);
@@ -68,8 +77,7 @@ export default function LoginScreen() {
       });
       if (error) throw error;
       if (data?.url) {
-        const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-        await handleOAuthResult(result);
+        await WebBrowser.openBrowserAsync(data.url);
       }
     } catch (e: any) {
       Alert.alert(t('common.error'), e.message);
@@ -79,23 +87,68 @@ export default function LoginScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       <View style={styles.header}>
         <Text style={styles.title}>{t('auth.welcome')}</Text>
         <Text style={styles.subtitle}>{t('auth.subtitle')}</Text>
       </View>
 
-      <View style={styles.buttons}>
+      {/* Email / Contraseña */}
+      <View style={styles.form}>
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          placeholderTextColor="#9CA3AF"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Contraseña"
+          placeholderTextColor="#9CA3AF"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
         <TouchableOpacity
-          style={[styles.button, styles.googleButton]}
-          onPress={signInWithGoogle}
+          style={[styles.button, styles.primaryButton]}
+          onPress={handleEmailAuth}
           disabled={loading}
         >
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>{t('auth.sign_in_google')}</Text>
+            <Text style={styles.buttonText}>
+              {isSignUp ? 'Crear cuenta' : 'Iniciar sesión'}
+            </Text>
           )}
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setIsSignUp(!isSignUp)} style={styles.toggle}>
+          <Text style={styles.toggleText}>
+            {isSignUp ? '¿Ya tenés cuenta? Iniciá sesión' : '¿No tenés cuenta? Registrate'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.divider}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>o</Text>
+        <View style={styles.dividerLine} />
+      </View>
+
+      {/* OAuth */}
+      <View style={styles.oauthButtons}>
+        <TouchableOpacity
+          style={[styles.button, styles.googleButton]}
+          onPress={signInWithGoogle}
+          disabled={loading}
+        >
+          <Text style={styles.buttonText}>{t('auth.sign_in_google')}</Text>
         </TouchableOpacity>
 
         {Platform.OS === 'ios' && (
@@ -104,13 +157,11 @@ export default function LoginScreen() {
             onPress={signInWithApple}
             disabled={loading}
           >
-            <Text style={[styles.buttonText, { color: '#fff' }]}>
-              {t('auth.sign_in_apple')}
-            </Text>
+            <Text style={styles.buttonText}>{t('auth.sign_in_apple')}</Text>
           </TouchableOpacity>
         )}
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -122,7 +173,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   header: {
-    marginBottom: 48,
+    marginBottom: 32,
     alignItems: 'center',
   },
   title: {
@@ -136,7 +187,43 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
   },
-  buttons: {
+  form: {
+    gap: 12,
+    marginBottom: 24,
+  },
+  input: {
+    height: 52,
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: '#111827',
+  },
+  toggle: {
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  toggleText: {
+    fontSize: 14,
+    color: '#4F46E5',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+    gap: 12,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E5E7EB',
+  },
+  dividerText: {
+    fontSize: 14,
+    color: '#9CA3AF',
+  },
+  oauthButtons: {
     gap: 12,
   },
   button: {
@@ -144,6 +231,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  primaryButton: {
+    backgroundColor: '#4F46E5',
   },
   googleButton: {
     backgroundColor: '#4285F4',
