@@ -4,6 +4,7 @@ import {
   TouchableOpacity, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { AppMessage } from '../../src/components/AppMessage';
 import { supabase } from '../../src/lib/supabase/client';
@@ -16,6 +17,7 @@ const LANGUAGES = [
 ];
 
 export default function SettingsScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { session, profile, signOut } = useAuth();
 
@@ -42,9 +44,9 @@ export default function SettingsScreen() {
         .eq('id', session.user.id);
       if (error) throw error;
       i18n.changeLanguage(language);
-      setMessage({ text: 'Preferencias guardadas', type: 'success' });
+      setMessage({ text: t('settings.saved'), type: 'success' });
     } catch (e: any) {
-      setMessage({ text: e.message ?? 'Error al guardar', type: 'error' });
+      setMessage({ text: e.message ?? t('settings.save_error'), type: 'error' });
     } finally {
       setSaving(false);
     }
@@ -57,17 +59,17 @@ export default function SettingsScreen() {
       style={styles.container}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
     >
-      <Text style={styles.screenTitle}>Ajustes</Text>
+      <Text style={styles.screenTitle}>{t('settings.title')}</Text>
 
       {/* Cuenta */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Cuenta</Text>
+        <Text style={styles.sectionTitle}>{t('settings.account')}</Text>
         <View style={styles.row}>
-          <Text style={styles.rowLabel}>Email</Text>
+          <Text style={styles.rowLabel}>{t('settings.email')}</Text>
           <Text style={styles.rowValue} numberOfLines={1}>{session?.user.email}</Text>
         </View>
         <View style={[styles.row, { borderBottomWidth: 0 }]}>
-          <Text style={styles.rowLabel}>Plan</Text>
+          <Text style={styles.rowLabel}>{t('settings.plan')}</Text>
           <View style={[styles.planBadge, profile?.plan === 'premium' ? styles.planPremium : styles.planFree]}>
             <Text style={[styles.planText, profile?.plan === 'premium' ? styles.planTextPremium : styles.planTextFree]}>
               {profile?.plan === 'premium' ? 'Premium' : 'Free'}
@@ -78,7 +80,7 @@ export default function SettingsScreen() {
 
       {/* Preferencias */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Preferencias</Text>
+        <Text style={styles.sectionTitle}>{t('settings.preferences')}</Text>
 
         {message && (
           <View style={{ marginBottom: 4 }}>
@@ -86,7 +88,7 @@ export default function SettingsScreen() {
           </View>
         )}
 
-        <Text style={styles.fieldLabel}>Moneda</Text>
+        <Text style={styles.fieldLabel}>{t('settings.currency')}</Text>
         <View style={styles.chips}>
           {CURRENCIES.map((c) => (
             <TouchableOpacity
@@ -99,7 +101,7 @@ export default function SettingsScreen() {
           ))}
         </View>
 
-        <Text style={[styles.fieldLabel, { marginTop: 16 }]}>Idioma</Text>
+        <Text style={[styles.fieldLabel, { marginTop: 16 }]}>{t('settings.language')}</Text>
         <View style={styles.chips}>
           {LANGUAGES.map((l) => (
             <TouchableOpacity
@@ -121,13 +123,13 @@ export default function SettingsScreen() {
         >
           {saving
             ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.saveBtnText}>Guardar preferencias</Text>}
+            : <Text style={styles.saveBtnText}>{t('settings.save_preferences')}</Text>}
         </TouchableOpacity>
       </View>
 
       {/* Sesión */}
       <TouchableOpacity style={styles.signOutBtn} onPress={signOut}>
-        <Text style={styles.signOutText}>Cerrar sesión</Text>
+        <Text style={styles.signOutText}>{t('auth.sign_out')}</Text>
       </TouchableOpacity>
 
       <View style={{ height: 24 }} />

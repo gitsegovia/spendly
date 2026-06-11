@@ -29,7 +29,7 @@ export default function LoginScreen() {
 
   async function handleEmailAuth() {
     if (!email || !password) {
-      Alert.alert(t('common.error'), 'Ingresá email y contraseña');
+      Alert.alert(t('common.error'), t('auth.email_password_required'));
       return;
     }
     try {
@@ -37,7 +37,7 @@ export default function LoginScreen() {
       if (isSignUp) {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        Alert.alert('¡Listo!', 'Revisá tu email para confirmar tu cuenta');
+        Alert.alert(t('auth.verify_email'), t('auth.verify_email_message'));
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -109,7 +109,7 @@ export default function LoginScreen() {
         />
         <TextInput
           style={styles.input}
-          placeholder="Contraseña"
+          placeholder={t('auth.password')}
           placeholderTextColor="#9CA3AF"
           value={password}
           onChangeText={setPassword}
@@ -124,13 +124,13 @@ export default function LoginScreen() {
             <ActivityIndicator color="#fff" />
           ) : (
             <Text style={styles.buttonText}>
-              {isSignUp ? 'Crear cuenta' : 'Iniciar sesión'}
+              {isSignUp ? t('auth.sign_up') : t('auth.sign_in')}
             </Text>
           )}
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setIsSignUp(!isSignUp)} style={styles.toggle}>
           <Text style={styles.toggleText}>
-            {isSignUp ? '¿Ya tenés cuenta? Iniciá sesión' : '¿No tenés cuenta? Registrate'}
+            {isSignUp ? t('auth.sign_in_toggle') : t('auth.sign_up_toggle')}
           </Text>
         </TouchableOpacity>
       </View>

@@ -1,4 +1,5 @@
 import { View, Text, Modal, TouchableOpacity, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   visible: boolean;
@@ -14,11 +15,12 @@ export function ConfirmModal({
   visible,
   title,
   message,
-  confirmLabel = 'Confirmar',
+  confirmLabel,
   destructive = false,
   onConfirm,
   onCancel,
 }: Props) {
+  const { t } = useTranslation();
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent>
       <View style={styles.overlay}>
@@ -27,7 +29,7 @@ export function ConfirmModal({
           <Text style={styles.message}>{message}</Text>
           <View style={styles.actions}>
             <TouchableOpacity style={styles.cancelBtn} onPress={onCancel} activeOpacity={0.7}>
-              <Text style={styles.cancelText}>Cancelar</Text>
+              <Text style={styles.cancelText}>{t('common.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.confirmBtn, destructive && styles.destructiveBtn]}
@@ -35,7 +37,7 @@ export function ConfirmModal({
               activeOpacity={0.7}
             >
               <Text style={[styles.confirmText, destructive && styles.destructiveText]}>
-                {confirmLabel}
+                {confirmLabel ?? t('common.confirm')}
               </Text>
             </TouchableOpacity>
           </View>

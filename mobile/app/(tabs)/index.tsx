@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
+import { categoryLabel } from '../../src/lib/categoryName';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useMonthlyStats } from '../../src/hooks/useMonthlyStats';
 import { MonthNavigator } from '../../src/components/MonthNavigator';
 
 export default function DashboardScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
   const now = new Date();
@@ -31,7 +34,7 @@ export default function DashboardScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}>
-      <Text style={styles.screenTitle}>Resumen</Text>
+      <Text style={styles.screenTitle}>{t('dashboard.title')}</Text>
 
       <MonthNavigator year={year} month={month} onPrev={prevMonth} onNext={nextMonth} lang={profile?.language} />
 
@@ -41,7 +44,7 @@ export default function DashboardScreen() {
         <>
           {/* Balance */}
           <View style={styles.balanceCard}>
-            <Text style={styles.balanceLabel}>Balance</Text>
+            <Text style={styles.balanceLabel}>{t('dashboard.balance')}</Text>
             <Text style={[styles.balanceAmount, { color: balanceColor }]}>
               {currency} {stats.balance.toFixed(2)}
             </Text>
@@ -50,13 +53,13 @@ export default function DashboardScreen() {
           {/* Resumen */}
           <View style={styles.row}>
             <View style={[styles.summaryCard, styles.incomeCard]}>
-              <Text style={styles.summaryLabel}>Ingresos</Text>
+              <Text style={styles.summaryLabel}>{t('dashboard.total_income')}</Text>
               <Text style={[styles.summaryAmount, { color: '#10B981' }]}>
                 {currency} {stats.totalIncome.toFixed(2)}
               </Text>
             </View>
             <View style={[styles.summaryCard, styles.expenseCard]}>
-              <Text style={styles.summaryLabel}>Gastos</Text>
+              <Text style={styles.summaryLabel}>{t('dashboard.total_expenses')}</Text>
               <Text style={[styles.summaryAmount, { color: '#EF4444' }]}>
                 {currency} {stats.totalExpenses.toFixed(2)}
               </Text>
@@ -66,11 +69,11 @@ export default function DashboardScreen() {
           {/* Gastos por categoría */}
           {stats.expensesByCategory.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Gastos por categoría</Text>
+              <Text style={styles.sectionTitle}>{t('dashboard.expenses_by_category')}</Text>
               {stats.expensesByCategory.map((cat) => (
                 <View key={cat.category_id} style={styles.catRow}>
                   <View style={[styles.catDot, { backgroundColor: cat.category_color }]} />
-                  <Text style={styles.catName}>{cat.category_name}</Text>
+                  <Text style={styles.catName}>{categoryLabel(cat.category_name, t)}</Text>
                   <Text style={styles.catAmount}>{currency} {cat.total.toFixed(2)}</Text>
                   <Text style={styles.catPct}>
                     {stats.totalExpenses > 0
@@ -84,8 +87,8 @@ export default function DashboardScreen() {
 
           {stats.totalExpenses === 0 && stats.totalIncome === 0 && (
             <View style={styles.empty}>
-              <Text style={styles.emptyText}>Sin registros este mes</Text>
-              <Text style={styles.emptyHint}>Agregá gastos o ingresos desde las pestañas</Text>
+              <Text style={styles.emptyText}>{t('dashboard.no_records')}</Text>
+              <Text style={styles.emptyHint}>{t('dashboard.no_records_hint')}</Text>
             </View>
           )}
         </>

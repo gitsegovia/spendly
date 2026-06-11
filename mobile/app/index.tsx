@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Redirect } from 'expo-router';
 import { ActivityIndicator, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../src/contexts/AuthContext';
 
 const TIMEOUT_MS = 12000;
 
 export default function Index() {
+  const { t } = useTranslation();
   const { session, profile, loading } = useAuth();
   const [timedOut, setTimedOut] = useState(false);
 
@@ -26,10 +28,10 @@ export default function Index() {
   if (timedOut && loading) {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorText}>No se pudo conectar al servidor</Text>
-        <Text style={styles.hint}>Verificá tu conexión a internet</Text>
+        <Text style={styles.errorText}>{t('common.connection_error')}</Text>
+        <Text style={styles.hint}>{t('common.connection_error_hint')}</Text>
         <TouchableOpacity onPress={() => setTimedOut(false)} style={styles.retry}>
-          <Text style={styles.retryText}>Reintentar</Text>
+          <Text style={styles.retryText}>{t('common.retry')}</Text>
         </TouchableOpacity>
       </View>
     );

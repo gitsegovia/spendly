@@ -15,7 +15,7 @@ const LANGUAGES = [
 
 export default function SetupScreen() {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const router = useRouter();
   const [currency, setCurrency] = useState('USD');
   const [language, setLanguage] = useState('es');
@@ -32,6 +32,7 @@ export default function SetupScreen() {
         .update({ currency, language, onboarding_completed: true })
         .eq('id', user.id);
       await supabase.rpc('seed_default_categories', { p_user_id: user.id });
+      await refreshProfile();
       i18n.changeLanguage(language);
       router.replace('/(tabs)');
     } catch (e: any) {
@@ -43,12 +44,12 @@ export default function SetupScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>¡Casi listo!</Text>
-      <Text style={styles.subtitle}>Configurá tu moneda e idioma</Text>
+      <Text style={styles.title}>{t('onboarding.setup_title')}</Text>
+      <Text style={styles.subtitle}>{t('onboarding.setup_subtitle')}</Text>
 
       <AppMessage message={errorMsg} type="error" />
 
-      <Text style={styles.sectionLabel}>Moneda</Text>
+      <Text style={styles.sectionLabel}>{t('settings.currency')}</Text>
       <View style={styles.options}>
         {CURRENCIES.map((c) => (
           <TouchableOpacity
@@ -61,7 +62,7 @@ export default function SetupScreen() {
         ))}
       </View>
 
-      <Text style={styles.sectionLabel}>Idioma</Text>
+      <Text style={styles.sectionLabel}>{t('settings.language')}</Text>
       <View style={styles.options}>
         {LANGUAGES.map((l) => (
           <TouchableOpacity
@@ -80,7 +81,7 @@ export default function SetupScreen() {
         {loading ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.buttonText}>Comenzar</Text>
+          <Text style={styles.buttonText}>{t('onboarding.start')}</Text>
         )}
       </TouchableOpacity>
     </View>

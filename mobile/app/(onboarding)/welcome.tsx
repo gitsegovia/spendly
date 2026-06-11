@@ -1,16 +1,18 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-const FEATURES = [
-  { icon: '📊', text: 'Registrá gastos e ingresos en segundos' },
-  { icon: '📈', text: 'Estadísticas claras por categoría y mes' },
-  { icon: '🔒', text: 'Tus datos seguros en la nube' },
-];
+import { useTranslation } from 'react-i18next';
 
 export default function WelcomeScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+
+  const features = [
+    { icon: '📊', text: t('onboarding.feature_record') },
+    { icon: '📈', text: t('onboarding.feature_stats') },
+    { icon: '🔒', text: t('onboarding.feature_secure') },
+  ];
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + 24 }]}>
@@ -18,12 +20,12 @@ export default function WelcomeScreen() {
         <View style={styles.logoContainer}>
           <Text style={styles.logoIcon}>💸</Text>
         </View>
-        <Text style={styles.appName}>Spendly</Text>
-        <Text style={styles.tagline}>Tomá el control de tus finanzas</Text>
+        <Text style={styles.appName}>{t('common.app_name')}</Text>
+        <Text style={styles.tagline}>{t('onboarding.tagline')}</Text>
       </View>
 
       <View style={styles.features}>
-        {FEATURES.map((f, i) => (
+        {features.map((f, i) => (
           <View key={i} style={styles.featureRow}>
             <Text style={styles.featureIcon}>{f.icon}</Text>
             <Text style={styles.featureText}>{f.text}</Text>
@@ -33,9 +35,9 @@ export default function WelcomeScreen() {
 
       <View style={styles.footer}>
         <TouchableOpacity style={styles.btn} onPress={() => router.push('/(onboarding)/setup')}>
-          <Text style={styles.btnText}>Comenzar</Text>
+          <Text style={styles.btnText}>{t('onboarding.start')}</Text>
         </TouchableOpacity>
-        <Text style={styles.disclaimer}>Gratis para siempre en el plan básico</Text>
+        <Text style={styles.disclaimer}>{t('onboarding.free_plan')}</Text>
       </View>
     </View>
   );

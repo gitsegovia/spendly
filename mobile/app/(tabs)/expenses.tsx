@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useTransactions } from '../../src/hooks/useTransactions';
 import { useCategories } from '../../src/hooks/useCategories';
@@ -9,6 +10,7 @@ import { AddTransactionModal } from '../../src/components/AddTransactionModal';
 import { MonthNavigator } from '../../src/components/MonthNavigator';
 
 export default function ExpensesScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
   const now = new Date();
@@ -36,14 +38,14 @@ export default function ExpensesScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>Gastos</Text>
+        <Text style={styles.title}>{t('expenses.title')}</Text>
         <TouchableOpacity style={styles.addBtn} onPress={() => setShowModal(true)}>
-          <Text style={styles.addText}>+ Agregar</Text>
+          <Text style={styles.addText}>{t('expenses.add_short')}</Text>
         </TouchableOpacity>
       </View>
       <MonthNavigator year={year} month={month} onPrev={prevMonth} onNext={nextMonth} lang={profile?.language} />
       <View style={styles.totalBar}>
-        <Text style={styles.totalLabel}>Total del mes</Text>
+        <Text style={styles.totalLabel}>{t('expenses.total_month')}</Text>
         <Text style={styles.totalAmount}>{currency} {total.toFixed(2)}</Text>
       </View>
       {loading ? (
@@ -56,7 +58,7 @@ export default function ExpensesScreen() {
           renderItem={({ item }) => (
             <TransactionCard transaction={item} currency={currency} onDelete={deleteTransaction} />
           )}
-          ListEmptyComponent={<View style={styles.empty}><Text style={styles.emptyText}>Sin gastos este mes</Text></View>}
+          ListEmptyComponent={<View style={styles.empty}><Text style={styles.emptyText}>{t('expenses.no_month')}</Text></View>}
         />
       )}
       <AddTransactionModal

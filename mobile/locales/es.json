@@ -8,15 +8,26 @@
     "delete": "Eliminar",
     "edit": "Editar",
     "back": "Atrás",
-    "confirm": "Confirmar"
+    "confirm": "Confirmar",
+    "add": "+ Agregar",
+    "retry": "Reintentar",
+    "connection_error": "No se pudo conectar al servidor",
+    "connection_error_hint": "Verificá tu conexión a internet"
   },
   "auth": {
     "sign_in": "Iniciar sesión",
+    "sign_up": "Crear cuenta",
     "sign_out": "Cerrar sesión",
     "sign_in_google": "Continuar con Google",
     "sign_in_apple": "Continuar con Apple",
     "welcome": "Bienvenido a Spendly",
-    "subtitle": "Tomá el control de tus finanzas"
+    "subtitle": "Tomá el control de tus finanzas",
+    "password": "Contraseña",
+    "email_password_required": "Ingresá email y contraseña",
+    "verify_email": "¡Listo!",
+    "verify_email_message": "Revisá tu email para confirmar tu cuenta",
+    "sign_up_toggle": "¿No tenés cuenta? Registrate",
+    "sign_in_toggle": "¿Ya tenés cuenta? Iniciá sesión"
   },
   "tabs": {
     "dashboard": "Inicio",
@@ -30,12 +41,18 @@
     "balance": "Balance",
     "total_expenses": "Gastos",
     "total_income": "Ingresos",
-    "month_summary": "Resumen del mes"
+    "month_summary": "Resumen del mes",
+    "expenses_by_category": "Gastos por categoría",
+    "no_records": "Sin registros este mes",
+    "no_records_hint": "Agregá gastos o ingresos desde las pestañas"
   },
   "expenses": {
     "title": "Gastos",
     "add": "Agregar gasto",
+    "add_short": "+ Agregar",
     "no_expenses": "Sin gastos registrados",
+    "no_month": "Sin gastos este mes",
+    "total_month": "Total del mes",
     "amount": "Monto",
     "category": "Categoría",
     "notes": "Notas",
@@ -44,9 +61,19 @@
   "income": {
     "title": "Ingresos",
     "add": "Agregar ingreso",
+    "add_short": "+ Agregar",
     "no_income": "Sin ingresos registrados",
+    "no_month": "Sin ingresos este mes",
+    "total_month": "Total del mes",
     "fixed": "Fijo",
     "variable": "Variable"
+  },
+  "stats": {
+    "title": "Estadísticas",
+    "balance_month": "Balance del mes",
+    "expenses_by_category": "Gastos por categoría",
+    "trend_6months": "Tendencia 6 meses",
+    "no_records": "Sin registros este mes"
   },
   "categories": {
     "title": "Categorías",
@@ -58,16 +85,63 @@
     "entertainment": "Entretenimiento",
     "salary": "Salario",
     "freelance": "Freelance",
-    "other": "Otro"
+    "other": "Otro",
+    "income_other": "Otro ingreso"
   },
   "settings": {
     "title": "Ajustes",
     "language": "Idioma",
     "currency": "Moneda",
     "account": "Cuenta",
+    "preferences": "Preferencias",
+    "email": "Email",
+    "plan": "Plan",
+    "save_preferences": "Guardar preferencias",
+    "saved": "Preferencias guardadas",
+    "save_error": "Error al guardar",
     "subscription": "Suscripción",
     "privacy": "Política de privacidad",
     "terms": "Términos de uso"
+  },
+  "onboarding": {
+    "tagline": "Tomá el control de tus finanzas",
+    "feature_record": "Registrá gastos e ingresos en segundos",
+    "feature_stats": "Estadísticas claras por categoría y mes",
+    "feature_secure": "Tus datos seguros en la nube",
+    "free_plan": "Gratis para siempre en el plan básico",
+    "start": "Comenzar",
+    "setup_title": "¡Casi listo!",
+    "setup_subtitle": "Configurá tu moneda e idioma"
+  },
+  "modal": {
+    "new_expense": "Nuevo gasto",
+    "new_income": "Nuevo ingreso",
+    "amount": "Monto",
+    "date": "Fecha",
+    "category": "Categoría",
+    "notes_optional": "Notas (opcional)",
+    "notes_placeholder": "Descripción...",
+    "items_optional": "Artículos (opcional)",
+    "add_item": "+ Agregar",
+    "item_name": "Artículo",
+    "item_amount": "Monto",
+    "date_picker_title": "Seleccioná la fecha",
+    "date_picker_done": "Listo",
+    "items_over_budget": "Excede el total por {{currency}} {{amount}}",
+    "items_others": "Se agregará \"Otros\" por {{currency}} {{amount}}",
+    "items_covered": "Artículos cubren el total completo",
+    "select_category": "Seleccioná una categoría",
+    "invalid_amount": "Ingresá un monto válido",
+    "items_over_total": "La suma de artículos ({{currency}} {{total}}) supera el monto total",
+    "save_error": "Ocurrió un error al guardar",
+    "item_others": "Otros"
+  },
+  "transaction": {
+    "delete_title": "Eliminar transacción",
+    "delete_message": "Esta acción no se puede deshacer. ¿Eliminás esta transacción?",
+    "delete_confirm": "Eliminar",
+    "items_count_one": "{{count}} artículo",
+    "items_count_other": "{{count}} artículos"
   },
   "premium": {
     "upgrade": "Obtener Premium",

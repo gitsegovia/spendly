@@ -4,6 +4,9 @@ import {
   Modal, ScrollView, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useTranslation } from 'react-i18next';
+import i18n from '../lib/i18n';
+import { categoryLabel } from '../lib/categoryName';
 import { Category, TransactionType } from '../types';
 import { AppMessage } from './AppMessage';
 
@@ -33,10 +36,12 @@ function sanitizeDecimal(text: string): string {
 }
 
 function formatDate(d: Date): string {
-  return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+  const locale = i18n.language === 'es' ? 'es-ES' : 'en-US';
+  return d.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 export function AddTransactionModal({ visible, onClose, onSave, categories, type, currency }: Props) {
+  const { t } = useTranslation();
   const [categoryId, setCategoryId] = useState('');
   const [amount, setAmount] = useState('');
   const [notes, setNotes] = useState('');
@@ -96,9 +101,9 @@ export function AddTransactionModal({ visible, onClose, onSave, categories, type
   }
 
   async function handleSave() {
-    if (!categoryId) return setErrorMsg('Seleccioná una categoría');
+    if (!categoryId) return setErrorMsg(t('modal.select_category'));
     const parsedAmount = parseFloat(amount);
-    if (!parsedAmount || parsedAmount <= 0) return setErrorMsg('Ingresá un monto válido');
+    if (!parsedAmount || parsedAmount <= 0) return setErrorMsg(t('modal.invalid_amount'));
 
     const parsedItems = namedItems.map((i) => ({
       name: i.name.trim(),
@@ -109,14 +114,12 @@ export function AddTransactionModal({ visible, onClose, onSave, categories, type
     const total = parsedItems.reduce((sum, i) => sum + i.amount * i.quantity, 0);
 
     if (total > parsedAmount + 0.001) {
-      return setErrorMsg(
-        `La suma de artículos (${currency} ${total.toFixed(2)}) supera el monto total`
-      );
+      return setErrorMsg(t('modal.items_over_total', { currency, total: total.toFixed(2) }));
     }
 
     // Si hay artículos y hay diferencia, crear item "Otros" con el resto
     if (parsedItems.length > 0 && itemsDiff > 0.001) {
-      parsedItems.push({ name: 'Otros', amount: itemsDiff, quantity: 1 });
+      parsedItems.push({ name: t('modal.item_others'), amount: itemsDiff, quantity: 1 });
     }
 
     try {
@@ -126,7 +129,7 @@ export function AddTransactionModal({ visible, onClose, onSave, categories, type
       reset();
       onClose();
     } catch (e: any) {
-      setErrorMsg(e.message ?? 'Ocurrió un error al guardar');
+      setErrorMsg(e.message ?? t('modal.save_error'));
     } finally {
       setLoading(false);
     }
@@ -137,11 +140,11 @@ export function AddTransactionModal({ visible, onClose, onSave, categories, type
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => { reset(); onClose(); }}>
-            <Text style={styles.cancel}>Cancelar</Text>
+            <Text style={styles.cancel}>{t('common.cancel')}</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>{type === 'expense' ? 'Nuevo gasto' : 'Nuevo ingreso'}</Text>
+          <Text style={styles.title}>{type === 'expense' ? t('modal.new_expense') : t('modal.new_income')}</Text>
           <TouchableOpacity onPress={handleSave} disabled={loading}>
-            <Text style={[styles.save, loading && styles.disabled]}>Guardar</Text>
+            <Text style={[styles.save, loading && styles.disabled]}>{t('common.save')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -149,7 +152,7 @@ export function AddTransactionModal({ visible, onClose, onSave, categories, type
           <AppMessage message={errorMsg} type="error" />
 
           {/* Monto */}
-          <Text style={styles.label}>Monto ({currency})</Text>
+          <Text style={styles.label}>{t('modal.amount')} ({currency})</Text>
           <TextInput
             style={styles.input}
             placeholder="0.00"
@@ -160,7 +163,7 @@ export function AddTransactionModal({ visible, onClose, onSave, categories, type
           />
 
           {/* Fecha */}
-          <Text style={styles.label}>Fecha</Text>
+          <Text style={styles.label}>{t('modal.date')}</Text>
           <TouchableOpacity style={styles.dateBtn} onPress={() => setShowDatePicker(true)}>
             <Text style={styles.dateBtnText}>{formatDate(selectedDate)}</Text>
             <Text style={styles.dateBtnIcon}>📅</Text>
@@ -183,9 +186,9 @@ export function AddTransactionModal({ visible, onClose, onSave, categories, type
               <View style={styles.dateOverlay}>
                 <View style={styles.dateSheet}>
                   <View style={styles.dateSheetHeader}>
-                    <Text style={styles.dateSheetTitle}>Seleccioná la fecha</Text>
+                    <Text style={styles.dateSheetTitle}>{t('modal.date_picker_title')}</Text>
                     <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                      <Text style={styles.dateSheetDone}>Listo</Text>
+                      <Text style={styles.dateSheetDone}>{t('modal.date_picker_done')}</Text>
                     </TouchableOpacity>
                   </View>
                   <DateTimePicker
@@ -202,7 +205,7 @@ export function AddTransactionModal({ visible, onClose, onSave, categories, type
           )}
 
           {/* Categoría */}
-          <Text style={styles.label}>Categoría</Text>
+          <Text style={styles.label}>{t('modal.category')}</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.catRow}>
             {categories.map((c) => (
               <TouchableOpacity
@@ -212,17 +215,17 @@ export function AddTransactionModal({ visible, onClose, onSave, categories, type
               >
                 <View style={[styles.catDot, { backgroundColor: c.color }]} />
                 <Text style={[styles.catText, categoryId === c.id && { color: c.color, fontWeight: '600' }]}>
-                  {c.name}
+                  {categoryLabel(c.name, t)}
                 </Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
 
           {/* Notas */}
-          <Text style={styles.label}>Notas (opcional)</Text>
+          <Text style={styles.label}>{t('modal.notes_optional')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="Descripción..."
+            placeholder={t('modal.notes_placeholder')}
             placeholderTextColor="#9CA3AF"
             value={notes}
             onChangeText={setNotes}
@@ -232,9 +235,9 @@ export function AddTransactionModal({ visible, onClose, onSave, categories, type
           {type === 'expense' && (
             <>
               <View style={styles.itemsHeader}>
-                <Text style={styles.label}>Artículos (opcional)</Text>
+                <Text style={styles.label}>{t('modal.items_optional')}</Text>
                 <TouchableOpacity onPress={addItem}>
-                  <Text style={styles.addItem}>+ Agregar</Text>
+                  <Text style={styles.addItem}>{t('modal.add_item')}</Text>
                 </TouchableOpacity>
               </View>
 
@@ -243,10 +246,10 @@ export function AddTransactionModal({ visible, onClose, onSave, categories, type
                 <View style={[styles.itemsIndicator, itemsOverBudget && styles.itemsIndicatorError]}>
                   <Text style={[styles.itemsIndicatorText, itemsOverBudget && styles.itemsIndicatorTextError]}>
                     {itemsOverBudget
-                      ? `Excede el total por ${currency} ${(itemsSum - parsedTotal).toFixed(2)}`
+                      ? t('modal.items_over_budget', { currency, amount: (itemsSum - parsedTotal).toFixed(2) })
                       : itemsDiff > 0.001
-                      ? `Se agregará "Otros" por ${currency} ${itemsDiff.toFixed(2)}`
-                      : `Artículos cubren el total completo`}
+                      ? t('modal.items_others', { currency, amount: itemsDiff.toFixed(2) })
+                      : t('modal.items_covered')}
                   </Text>
                 </View>
               )}
@@ -255,14 +258,14 @@ export function AddTransactionModal({ visible, onClose, onSave, categories, type
                 <View key={i} style={styles.itemRow}>
                   <TextInput
                     style={[styles.input, styles.itemName]}
-                    placeholder="Artículo"
+                    placeholder={t('modal.item_name')}
                     placeholderTextColor="#9CA3AF"
                     value={item.name}
                     onChangeText={(v) => updateItem(i, 'name', v)}
                   />
                   <TextInput
                     style={[styles.input, styles.itemAmount]}
-                    placeholder="Monto"
+                    placeholder={t('modal.item_amount')}
                     placeholderTextColor="#9CA3AF"
                     value={item.amount}
                     onChangeText={(v) => handleItemAmountChange(i, v)}

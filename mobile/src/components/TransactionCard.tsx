@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { categoryLabel } from '../lib/categoryName';
 import { TransactionWithItems } from '../hooks/useTransactions';
 import { ConfirmModal } from './ConfirmModal';
 
@@ -10,6 +12,7 @@ interface Props {
 }
 
 export function TransactionCard({ transaction, currency, onDelete }: Props) {
+  const { t } = useTranslation();
   const [showConfirm, setShowConfirm] = useState(false);
   const hasItems = transaction.items.length > 0;
 
@@ -17,9 +20,9 @@ export function TransactionCard({ transaction, currency, onDelete }: Props) {
     <>
       <ConfirmModal
         visible={showConfirm}
-        title="Eliminar transacción"
-        message="Esta acción no se puede deshacer. ¿Eliminás esta transacción?"
-        confirmLabel="Eliminar"
+        title={t('transaction.delete_title')}
+        message={t('transaction.delete_message')}
+        confirmLabel={t('transaction.delete_confirm')}
         destructive
         onConfirm={() => { setShowConfirm(false); onDelete(transaction.id); }}
         onCancel={() => setShowConfirm(false)}
@@ -27,11 +30,11 @@ export function TransactionCard({ transaction, currency, onDelete }: Props) {
     <TouchableOpacity onLongPress={() => setShowConfirm(true)} style={styles.card}>
       <View style={[styles.dot, { backgroundColor: transaction.category_color ?? '#6B7280' }]} />
       <View style={styles.info}>
-        <Text style={styles.category}>{transaction.category_name}</Text>
+        <Text style={styles.category}>{categoryLabel(transaction.category_name, t)}</Text>
         {transaction.notes ? <Text style={styles.notes}>{transaction.notes}</Text> : null}
         {hasItems && (
           <Text style={styles.items}>
-            {transaction.items.length} artículo{transaction.items.length > 1 ? 's' : ''}
+            {t('transaction.items_count', { count: transaction.items.length })}
           </Text>
         )}
       </View>

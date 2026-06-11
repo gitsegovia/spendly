@@ -8,15 +8,26 @@
     "delete": "Delete",
     "edit": "Edit",
     "back": "Back",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "add": "+ Add",
+    "retry": "Retry",
+    "connection_error": "Could not connect to the server",
+    "connection_error_hint": "Check your internet connection"
   },
   "auth": {
     "sign_in": "Sign in",
+    "sign_up": "Create account",
     "sign_out": "Sign out",
     "sign_in_google": "Continue with Google",
     "sign_in_apple": "Continue with Apple",
     "welcome": "Welcome to Spendly",
-    "subtitle": "Take control of your finances"
+    "subtitle": "Take control of your finances",
+    "password": "Password",
+    "email_password_required": "Enter your email and password",
+    "verify_email": "Done!",
+    "verify_email_message": "Check your email to confirm your account",
+    "sign_up_toggle": "Don't have an account? Sign up",
+    "sign_in_toggle": "Already have an account? Sign in"
   },
   "tabs": {
     "dashboard": "Home",
@@ -30,12 +41,18 @@
     "balance": "Balance",
     "total_expenses": "Expenses",
     "total_income": "Income",
-    "month_summary": "Month summary"
+    "month_summary": "Month summary",
+    "expenses_by_category": "Expenses by category",
+    "no_records": "No records this month",
+    "no_records_hint": "Add expenses or income from the tabs"
   },
   "expenses": {
     "title": "Expenses",
     "add": "Add expense",
+    "add_short": "+ Add",
     "no_expenses": "No expenses recorded",
+    "no_month": "No expenses this month",
+    "total_month": "Month total",
     "amount": "Amount",
     "category": "Category",
     "notes": "Notes",
@@ -44,9 +61,19 @@
   "income": {
     "title": "Income",
     "add": "Add income",
+    "add_short": "+ Add",
     "no_income": "No income recorded",
+    "no_month": "No income this month",
+    "total_month": "Month total",
     "fixed": "Fixed",
     "variable": "Variable"
+  },
+  "stats": {
+    "title": "Statistics",
+    "balance_month": "Month balance",
+    "expenses_by_category": "Expenses by category",
+    "trend_6months": "6-month trend",
+    "no_records": "No records this month"
   },
   "categories": {
     "title": "Categories",
@@ -58,16 +85,63 @@
     "entertainment": "Entertainment",
     "salary": "Salary",
     "freelance": "Freelance",
-    "other": "Other"
+    "other": "Other",
+    "income_other": "Other income"
   },
   "settings": {
     "title": "Settings",
     "language": "Language",
     "currency": "Currency",
     "account": "Account",
+    "preferences": "Preferences",
+    "email": "Email",
+    "plan": "Plan",
+    "save_preferences": "Save preferences",
+    "saved": "Preferences saved",
+    "save_error": "Error saving",
     "subscription": "Subscription",
     "privacy": "Privacy policy",
     "terms": "Terms of use"
+  },
+  "onboarding": {
+    "tagline": "Take control of your finances",
+    "feature_record": "Record expenses and income in seconds",
+    "feature_stats": "Clear statistics by category and month",
+    "feature_secure": "Your data secure in the cloud",
+    "free_plan": "Free forever on the basic plan",
+    "start": "Get started",
+    "setup_title": "Almost there!",
+    "setup_subtitle": "Set your currency and language"
+  },
+  "modal": {
+    "new_expense": "New expense",
+    "new_income": "New income",
+    "amount": "Amount",
+    "date": "Date",
+    "category": "Category",
+    "notes_optional": "Notes (optional)",
+    "notes_placeholder": "Description...",
+    "items_optional": "Items (optional)",
+    "add_item": "+ Add",
+    "item_name": "Item",
+    "item_amount": "Amount",
+    "date_picker_title": "Select date",
+    "date_picker_done": "Done",
+    "items_over_budget": "Exceeds total by {{currency}} {{amount}}",
+    "items_others": "\"Other\" will be added for {{currency}} {{amount}}",
+    "items_covered": "Items cover the full total",
+    "select_category": "Select a category",
+    "invalid_amount": "Enter a valid amount",
+    "items_over_total": "Items total ({{currency}} {{total}}) exceeds the total amount",
+    "save_error": "An error occurred while saving",
+    "item_others": "Other"
+  },
+  "transaction": {
+    "delete_title": "Delete transaction",
+    "delete_message": "This action cannot be undone. Delete this transaction?",
+    "delete_confirm": "Delete",
+    "items_count_one": "{{count}} item",
+    "items_count_other": "{{count}} items"
   },
   "premium": {
     "upgrade": "Get Premium",

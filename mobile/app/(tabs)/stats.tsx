@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
+import { categoryLabel } from '../../src/lib/categoryName';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useMonthlyStats } from '../../src/hooks/useMonthlyStats';
 import { useMonthlyTrend } from '../../src/hooks/useMonthlyTrend';
@@ -9,6 +11,7 @@ import { MonthNavigator } from '../../src/components/MonthNavigator';
 const BAR_MAX_HEIGHT = 80;
 
 export default function StatsScreen() {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
   const now = new Date();
@@ -39,7 +42,7 @@ export default function StatsScreen() {
       style={styles.container}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
     >
-      <Text style={styles.screenTitle}>Estadísticas</Text>
+      <Text style={styles.screenTitle}>{t('stats.title')}</Text>
 
       <MonthNavigator year={year} month={month} onPrev={prevMonth} onNext={nextMonth} lang={profile?.language} />
 
@@ -50,13 +53,13 @@ export default function StatsScreen() {
           {/* Resumen del mes */}
           <View style={styles.summaryRow}>
             <View style={[styles.summaryCard, { backgroundColor: '#F0FDF4' }]}>
-              <Text style={styles.summaryLabel}>Ingresos</Text>
+              <Text style={styles.summaryLabel}>{t('dashboard.total_income')}</Text>
               <Text style={[styles.summaryAmount, { color: '#10B981' }]}>
                 {currency} {stats.totalIncome.toFixed(2)}
               </Text>
             </View>
             <View style={[styles.summaryCard, { backgroundColor: '#FFF1F2' }]}>
-              <Text style={styles.summaryLabel}>Gastos</Text>
+              <Text style={styles.summaryLabel}>{t('dashboard.total_expenses')}</Text>
               <Text style={[styles.summaryAmount, { color: '#EF4444' }]}>
                 {currency} {stats.totalExpenses.toFixed(2)}
               </Text>
@@ -64,7 +67,7 @@ export default function StatsScreen() {
           </View>
 
           <View style={styles.balanceCard}>
-            <Text style={styles.balanceLabel}>Balance del mes</Text>
+            <Text style={styles.balanceLabel}>{t('stats.balance_month')}</Text>
             <Text style={[styles.balanceAmount, { color: balanceColor }]}>
               {stats.balance >= 0 ? '+' : ''}{currency} {stats.balance.toFixed(2)}
             </Text>
@@ -73,7 +76,7 @@ export default function StatsScreen() {
           {/* Gastos por categoría */}
           {stats.expensesByCategory.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Gastos por categoría</Text>
+              <Text style={styles.sectionTitle}>{t('stats.expenses_by_category')}</Text>
               {stats.expensesByCategory.map((cat) => {
                 const pct = stats.totalExpenses > 0
                   ? (cat.total / stats.totalExpenses) * 100
@@ -82,7 +85,7 @@ export default function StatsScreen() {
                   <View key={cat.category_id} style={styles.catItem}>
                     <View style={styles.catLabelRow}>
                       <View style={[styles.catDot, { backgroundColor: cat.category_color }]} />
-                      <Text style={styles.catName}>{cat.category_name}</Text>
+                      <Text style={styles.catName}>{categoryLabel(cat.category_name, t)}</Text>
                       <Text style={styles.catPct}>{pct.toFixed(0)}%</Text>
                       <Text style={styles.catAmount}>{currency} {cat.total.toFixed(2)}</Text>
                     </View>
@@ -102,7 +105,7 @@ export default function StatsScreen() {
 
           {stats.totalExpenses === 0 && stats.totalIncome === 0 && (
             <View style={styles.empty}>
-              <Text style={styles.emptyText}>Sin registros este mes</Text>
+              <Text style={styles.emptyText}>{t('stats.no_records')}</Text>
             </View>
           )}
         </>
@@ -110,7 +113,7 @@ export default function StatsScreen() {
 
       {/* Tendencia 6 meses */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Tendencia 6 meses</Text>
+        <Text style={styles.sectionTitle}>{t('stats.trend_6months')}</Text>
         {trendLoading ? (
           <ActivityIndicator color="#4F46E5" style={{ marginVertical: 20 }} />
         ) : (
@@ -118,11 +121,11 @@ export default function StatsScreen() {
             <View style={styles.legendRow}>
               <View style={styles.legendItem}>
                 <View style={[styles.legendDot, { backgroundColor: '#10B981' }]} />
-                <Text style={styles.legendLabel}>Ingresos</Text>
+                <Text style={styles.legendLabel}>{t('dashboard.total_income')}</Text>
               </View>
               <View style={styles.legendItem}>
                 <View style={[styles.legendDot, { backgroundColor: '#EF4444' }]} />
-                <Text style={styles.legendLabel}>Gastos</Text>
+                <Text style={styles.legendLabel}>{t('dashboard.total_expenses')}</Text>
               </View>
             </View>
 
