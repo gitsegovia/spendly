@@ -11,7 +11,6 @@ import {
 import { useTranslation } from 'react-i18next';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
-import { makeRedirectUri } from 'expo-auth-session';
 import { supabase } from '../../src/lib/supabase/client';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -20,7 +19,7 @@ export default function LoginScreen() {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
 
-  const redirectTo = makeRedirectUri({ path: 'auth/callback' });
+  const redirectTo = Linking.createURL('auth/callback');
 
   async function handleOAuthResult(result: WebBrowser.WebBrowserAuthSessionResult) {
     if (result.type !== 'success' || !result.url) return;
