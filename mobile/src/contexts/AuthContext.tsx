@@ -25,27 +25,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('[Auth] iniciando getSession...');
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      console.log('[Auth] getSession ok — session:', session ? 'SI' : 'NO', error ? 'error:' + error.message : '');
+    // getSession es el trigger principal del arranque — el JWT está listo aquí
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session) loadProfile(session.user.id);
       else setLoading(false);
-    }).catch((e) => {
-      console.error('[Auth] getSession catch:', e);
-      setLoading(false);
-    });
+    }).catch(() => setLoading(false));
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        console.log('[Auth] onAuthStateChange event — session:', session ? 'SI' : 'NO');
+      async (event, session) => {
         setSession(session);
-        if (session) {
-          await loadProfile(session.user.id);
-        } else {
+        if (event === 'SIGNED_IN') {
+          // Solo en nuevo login (OAuth, email) — no en el arranque inicial
+          if (session) await loadProfile(session.user.id);
+        } else if (event === 'SIGNED_OUT') {
           setProfile(null);
           setLoading(false);
         }
+        // TOKEN_REFRESHED y otros eventos: solo actualiza sesión, no recarga profile
       }
     );
 
@@ -53,25 +50,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   async function loadProfile(userId: string) {
-    console.log('[Auth] loadProfile llamado para:', userId.slice(0, 8) + '...');
     try {
-      // Timeout manual de 5s para no colgar el spinner
-      const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
-      const query = supabase.from('profiles').select('*').eq('id', userId).single();
-      const result = await Promise.race([query, timeout]);
-
-      if (result && 'data' in result) {
-        const { data, error } = result as { data: Profile | null; error: any };
-        if (error) console.error('[Auth] loadProfile error:', error.message);
-        if (data) { console.log('[Auth] profile cargado OK'); setProfile(data); }
-        else console.warn('[Auth] profile no encontrado para user:', userId.slice(0, 8));
-      } else {
-        console.warn('[Auth] loadProfile timeout — continuando sin profile');
-      }
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      if (error) console.error('[Auth] loadProfile error:', error.message);
+      if (data) setProfile(data as Profile);
     } catch (e) {
       console.error('[Auth] loadProfile exception:', e);
     } finally {
-      console.log('[Auth] setLoading(false)');
       setLoading(false);
     }
   }
