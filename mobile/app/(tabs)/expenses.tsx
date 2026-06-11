@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useTransactions } from '../../src/hooks/useTransactions';
 import { useCategories } from '../../src/hooks/useCategories';
@@ -8,6 +9,7 @@ import { AddTransactionModal } from '../../src/components/AddTransactionModal';
 import { MonthNavigator } from '../../src/components/MonthNavigator';
 
 export default function ExpensesScreen() {
+  const insets = useSafeAreaInsets();
   const { profile } = useAuth();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
@@ -32,7 +34,7 @@ export default function ExpensesScreen() {
   const total = transactions.reduce((sum, t) => sum + Number(t.amount), 0);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <Text style={styles.title}>Gastos</Text>
         <TouchableOpacity style={styles.addBtn} onPress={() => setShowModal(true)}>

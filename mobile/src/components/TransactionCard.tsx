@@ -1,5 +1,7 @@
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { TransactionWithItems } from '../hooks/useTransactions';
+import { ConfirmModal } from './ConfirmModal';
 
 interface Props {
   transaction: TransactionWithItems;
@@ -8,17 +10,21 @@ interface Props {
 }
 
 export function TransactionCard({ transaction, currency, onDelete }: Props) {
+  const [showConfirm, setShowConfirm] = useState(false);
   const hasItems = transaction.items.length > 0;
 
-  function confirmDelete() {
-    Alert.alert('Eliminar', '¿Eliminar esta transacción?', [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Eliminar', style: 'destructive', onPress: () => onDelete(transaction.id) },
-    ]);
-  }
-
   return (
-    <TouchableOpacity onLongPress={confirmDelete} style={styles.card}>
+    <>
+      <ConfirmModal
+        visible={showConfirm}
+        title="Eliminar transacción"
+        message="Esta acción no se puede deshacer. ¿Eliminás esta transacción?"
+        confirmLabel="Eliminar"
+        destructive
+        onConfirm={() => { setShowConfirm(false); onDelete(transaction.id); }}
+        onCancel={() => setShowConfirm(false)}
+      />
+    <TouchableOpacity onLongPress={() => setShowConfirm(true)} style={styles.card}>
       <View style={[styles.dot, { backgroundColor: transaction.category_color ?? '#6B7280' }]} />
       <View style={styles.info}>
         <Text style={styles.category}>{transaction.category_name}</Text>
@@ -36,6 +42,7 @@ export function TransactionCard({ transaction, currency, onDelete }: Props) {
         <Text style={styles.date}>{transaction.date}</Text>
       </View>
     </TouchableOpacity>
+    </>
   );
 }
 

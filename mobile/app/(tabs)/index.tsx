@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useMonthlyStats } from '../../src/hooks/useMonthlyStats';
 import { MonthNavigator } from '../../src/components/MonthNavigator';
 
 export default function DashboardScreen() {
+  const insets = useSafeAreaInsets();
   const { profile } = useAuth();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
@@ -28,7 +30,7 @@ export default function DashboardScreen() {
   const balanceColor = stats.balance >= 0 ? '#10B981' : '#EF4444';
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}>
       <Text style={styles.screenTitle}>Resumen</Text>
 
       <MonthNavigator year={year} month={month} onPrev={prevMonth} onNext={nextMonth} lang={profile?.language} />

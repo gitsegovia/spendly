@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  Modal, ScrollView, KeyboardAvoidingView, Platform, Alert,
+  Modal, ScrollView, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { Category, TransactionType } from '../types';
+import { AppMessage } from './AppMessage';
 
 interface Item { name: string; amount: string; quantity: string; }
 
@@ -29,10 +30,27 @@ export function AddTransactionModal({ visible, onClose, onSave, categories, type
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   function reset() {
-    setCategoryId(''); setAmount(''); setNotes('');
+    setCategoryId(''); setAmount(''); setNotes(''); setErrorMsg('');
     setDate(new Date().toISOString().split('T')[0]); setItems([]);
+  }
+
+  function handleAmountChange(text: string) {
+    // Solo dígitos y un punto decimal
+    const cleaned = text.replace(/[^0-9.]/g, '');
+    const dots = (cleaned.match(/\./g) ?? []).length;
+    if (dots > 1) return;
+    setAmount(cleaned);
+    if (errorMsg) setErrorMsg('');
+  }
+
+  function handleItemAmountChange(index: number, text: string) {
+    const cleaned = text.replace(/[^0-9.]/g, '');
+    const dots = (cleaned.match(/\./g) ?? []).length;
+    if (dots > 1) return;
+    updateItem(index, 'amount', cleaned);
   }
 
   function addItem() {
@@ -50,9 +68,9 @@ export function AddTransactionModal({ visible, onClose, onSave, categories, type
   }
 
   async function handleSave() {
-    if (!categoryId) return Alert.alert('Error', 'Seleccioná una categoría');
+    if (!categoryId) return setErrorMsg('Seleccioná una categoría');
     const parsedAmount = parseFloat(amount);
-    if (!parsedAmount || parsedAmount <= 0) return Alert.alert('Error', 'Ingresá un monto válido');
+    if (!parsedAmount || parsedAmount <= 0) return setErrorMsg('Ingresá un monto válido');
 
     const parsedItems = items
       .filter((i) => i.name.trim())
@@ -64,11 +82,12 @@ export function AddTransactionModal({ visible, onClose, onSave, categories, type
 
     try {
       setLoading(true);
+      setErrorMsg('');
       await onSave(categoryId, parsedAmount, date, notes, parsedItems);
       reset();
       onClose();
     } catch (e: any) {
-      Alert.alert('Error', e.message);
+      setErrorMsg(e.message ?? 'Ocurrió un error al guardar');
     } finally {
       setLoading(false);
     }
@@ -88,6 +107,8 @@ export function AddTransactionModal({ visible, onClose, onSave, categories, type
         </View>
 
         <ScrollView style={styles.body} keyboardShouldPersistTaps="handled">
+          <AppMessage message={errorMsg} type="error" />
+
           {/* Monto */}
           <Text style={styles.label}>Monto ({currency})</Text>
           <TextInput
@@ -95,7 +116,7 @@ export function AddTransactionModal({ visible, onClose, onSave, categories, type
             placeholder="0.00"
             placeholderTextColor="#9CA3AF"
             value={amount}
-            onChangeText={setAmount}
+            onChangeText={handleAmountChange}
             keyboardType="decimal-pad"
           />
 
@@ -159,7 +180,7 @@ export function AddTransactionModal({ visible, onClose, onSave, categories, type
                     placeholder="Monto"
                     placeholderTextColor="#9CA3AF"
                     value={item.amount}
-                    onChangeText={(v) => updateItem(i, 'amount', v)}
+                    onChangeText={(v) => handleItemAmountChange(i, v)}
                     keyboardType="decimal-pad"
                   />
                   <TouchableOpacity onPress={() => removeItem(i)} style={styles.removeItem}>
