@@ -44,8 +44,10 @@
     ],
     "extra": {
       "eas": {
-        "projectId": ""
-      }
-    }
+        "projectId": "4f1d56a2-a61a-452c-8310-f81d6ab3113e"
+      },
+      "router": {}
+    },
+    "owner": "segovia_develop"
   }
 }
