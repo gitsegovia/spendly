@@ -20,6 +20,7 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
 
   const redirectTo = Linking.createURL('auth/callback');
+  console.log('[Spendly] redirectTo:', redirectTo);
 
   async function handleOAuthResult(result: WebBrowser.WebBrowserAuthSessionResult) {
     if (result.type !== 'success' || !result.url) return;
