@@ -25,7 +25,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) console.error('[Auth] getSession error:', error.message);
       setSession(session);
       if (session) loadProfile(session.user.id);
       else setLoading(false);
@@ -47,16 +48,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   async function loadProfile(userId: string) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-
-    if (data) {
-      setProfile(data as Profile);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      if (error) console.error('[Auth] loadProfile error:', error.message);
+      if (data) setProfile(data as Profile);
+    } catch (e) {
+      console.error('[Auth] loadProfile exception:', e);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   async function signOut() {
