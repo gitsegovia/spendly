@@ -25,17 +25,19 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-build-properties",
-      "expo-secure-store",
-      "expo-localization",
       [
         "expo-build-properties",
         {
+          "ios": {
+            "useFrameworks": "static"
+          },
           "android": {
             "kotlinVersion": "1.9.0"
           }
         }
       ],
+      "expo-secure-store",
+      "expo-localization",
       "expo-router",
       "expo-status-bar",
       "@react-native-community/datetimepicker"
