@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../src/lib/i18n';
 import { supabase } from '../../src/lib/supabase/client';
 import { useAuth } from '../../src/contexts/AuthContext';
+import { AppMessage } from '../../src/components/AppMessage';
 
 const CURRENCIES = ['USD', 'EUR', 'MXN', 'COP', 'ARS', 'PEN', 'CLP'];
 const LANGUAGES = [
@@ -19,23 +20,19 @@ export default function SetupScreen() {
   const [currency, setCurrency] = useState('USD');
   const [language, setLanguage] = useState('es');
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   async function handleFinish() {
     if (!user) return;
+    setErrorMsg('');
     try {
       setLoading(true);
-
-      await supabase
-        .from('profiles')
-        .update({ currency, language })
-        .eq('id', user.id);
-
+      await supabase.from('profiles').update({ currency, language }).eq('id', user.id);
       await supabase.rpc('seed_default_categories', { p_user_id: user.id });
-
       i18n.changeLanguage(language);
       router.replace('/(tabs)');
     } catch (e: any) {
-      Alert.alert(t('common.error'), e.message);
+      setErrorMsg(e.message ?? t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -45,6 +42,8 @@ export default function SetupScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>¡Casi listo!</Text>
       <Text style={styles.subtitle}>Configurá tu moneda e idioma</Text>
+
+      <AppMessage message={errorMsg} type="error" />
 
       <Text style={styles.sectionLabel}>Moneda</Text>
       <View style={styles.options}>
