@@ -3,7 +3,7 @@ import { Redirect } from 'expo-router';
 import { ActivityIndicator, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useAuth } from '../src/contexts/AuthContext';
 
-const TIMEOUT_MS = 8000;
+const TIMEOUT_MS = 12000;
 
 export default function Index() {
   const { session, profile, loading } = useAuth();
