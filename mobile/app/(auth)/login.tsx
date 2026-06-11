@@ -23,11 +23,15 @@ export default function LoginScreen() {
   console.log('[Spendly] redirectTo:', redirectTo);
 
   async function handleOAuthResult(result: WebBrowser.WebBrowserAuthSessionResult) {
+    console.log('[OAuth] result type:', result.type);
+    if (result.type === 'success') console.log('[OAuth] result url:', result.url);
     if (result.type !== 'success' || !result.url) return;
     const parsed = Linking.parse(result.url);
     const code = parsed.queryParams?.code as string | undefined;
+    console.log('[OAuth] code extracted:', code ? 'YES' : 'NO');
     if (code) {
       const { error } = await supabase.auth.exchangeCodeForSession(code);
+      console.log('[OAuth] exchangeCode error:', error?.message ?? 'none');
       if (error) throw error;
     }
   }
@@ -35,12 +39,16 @@ export default function LoginScreen() {
   async function signInWithGoogle() {
     try {
       setLoading(true);
+      console.log('[OAuth] redirectTo:', redirectTo);
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo, skipBrowserRedirect: true },
       });
+      console.log('[OAuth] signInWithOAuth error:', error?.message ?? 'none');
+      console.log('[OAuth] OAuth URL:', data?.url ? 'received' : 'missing');
       if (error) throw error;
       if (data?.url) {
+        console.log('[OAuth] opening browser...');
         const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
         await handleOAuthResult(result);
       }
