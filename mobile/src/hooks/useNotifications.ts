@@ -40,18 +40,29 @@ async function scheduleDaily(hour: number, minute: number) {
   console.log('[Notifications] scheduleDaily start', { hour, minute });
   await cancelPrevious();
   console.log('[Notifications] scheduling new...');
-  const id = await Notifications.scheduleNotificationAsync({
+
+  const trigger: Notifications.DailyTriggerInput = {
+    type: Notifications.SchedulableTriggerInputTypes.DAILY,
+    hour,
+    minute,
+  };
+  if (Platform.OS === 'android') {
+    (trigger as any).channelId = CHANNEL_ID;
+  }
+
+  const schedulePromise = Notifications.scheduleNotificationAsync({
     content: {
       title: 'Spendly',
       body: i18n.t('notifications.reminder_body'),
-      sound: true,
     },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DAILY,
-      hour,
-      minute,
-    },
+    trigger,
   });
+
+  const timeoutPromise = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('scheduleNotificationAsync timeout after 8s')), 8000),
+  );
+
+  const id = await Promise.race([schedulePromise, timeoutPromise]);
   await AsyncStorage.setItem(NOTIF_ID_KEY, id);
   console.log('[Notifications] scheduled, id:', id);
 }
