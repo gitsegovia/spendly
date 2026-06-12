@@ -90,7 +90,7 @@ export default function SettingsScreen() {
           <Text style={styles.rowLabel}>{t('settings.plan')}</Text>
           <View style={[styles.planBadge, profile?.plan === 'premium' ? styles.planPremium : styles.planFree]}>
             <Text style={[styles.planText, profile?.plan === 'premium' ? styles.planTextPremium : styles.planTextFree]}>
-              {profile?.plan === 'premium' ? 'Premium' : 'Free'}
+              {profile?.plan === 'premium' ? t('settings.plan_premium') : t('settings.plan_free')}
             </Text>
           </View>
         </View>

@@ -205,7 +205,7 @@ export default function LoginScreen() {
 
       <View style={styles.divider}>
         <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>o</Text>
+        <Text style={styles.dividerText}>{t('common.or')}</Text>
         <View style={styles.dividerLine} />
       </View>
 
