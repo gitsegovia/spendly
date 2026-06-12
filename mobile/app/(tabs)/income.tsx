@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useTransactions } from '../../src/hooks/useTransactions';
 import { useCategories } from '../../src/hooks/useCategories';
 import { useFreemium } from '../../src/hooks/useFreemium';
+import { useDatabase } from '../../src/contexts/DatabaseContext';
 import { TransactionCard } from '../../src/components/TransactionCard';
 import { AddTransactionModal } from '../../src/components/AddTransactionModal';
 import { MonthNavigator } from '../../src/components/MonthNavigator';
@@ -24,6 +25,7 @@ export default function IncomeScreen() {
   const { transactions, loading, addTransaction, deleteTransaction } = useTransactions('income', year, month);
   const { categories } = useCategories('income');
   const { isMonthLocked } = useFreemium();
+  const { syncStatus, sync } = useDatabase();
   const currency = profile?.currency ?? 'USD';
 
   const prevMonthYear = month === 1 ? year - 1 : year;
@@ -67,6 +69,14 @@ export default function IncomeScreen() {
             <TransactionCard transaction={item} currency={currency} onDelete={deleteTransaction} />
           )}
           ListEmptyComponent={<View style={styles.empty}><Text style={styles.emptyText}>{t('income.no_month')}</Text></View>}
+          refreshControl={
+            <RefreshControl
+              refreshing={syncStatus === 'syncing'}
+              onRefresh={() => sync('manual')}
+              tintColor="#10B981"
+              colors={['#10B981']}
+            />
+          }
         />
       )}
       <AddTransactionModal

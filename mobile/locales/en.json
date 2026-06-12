@@ -149,6 +149,11 @@
     "items_count_one": "{{count}} item",
     "items_count_other": "{{count}} items"
   },
+  "sync": {
+    "syncing": "Syncing...",
+    "error": "Sync error",
+    "retry": "Retry"
+  },
   "premium": {
     "upgrade": "Get Premium",
     "title": "Unlock Premium",

@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { categoryLabel } from '../../src/lib/categoryName';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useMonthlyStats } from '../../src/hooks/useMonthlyStats';
 import { useFreemium } from '../../src/hooks/useFreemium';
+import { useDatabase } from '../../src/contexts/DatabaseContext';
 import { MonthNavigator } from '../../src/components/MonthNavigator';
 import { PaywallModal } from '../../src/components/PaywallModal';
+import { SyncIndicator } from '../../src/components/SyncIndicator';
 
 export default function DashboardScreen() {
   const { t } = useTranslation();
@@ -19,6 +21,7 @@ export default function DashboardScreen() {
   const [showPaywall, setShowPaywall] = useState(false);
   const { stats, loading } = useMonthlyStats(year, month);
   const { isMonthLocked } = useFreemium();
+  const { syncStatus, sync } = useDatabase();
 
   const prevMonthYear = month === 1 ? year - 1 : year;
   const prevMonthNum = month === 1 ? 12 : month - 1;
@@ -41,8 +44,20 @@ export default function DashboardScreen() {
   const balanceColor = stats.balance >= 0 ? '#10B981' : '#EF4444';
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
+      refreshControl={
+        <RefreshControl
+          refreshing={syncStatus === 'syncing'}
+          onRefresh={() => sync('manual')}
+          tintColor="#4F46E5"
+          colors={['#4F46E5']}
+        />
+      }
+    >
       <Text style={styles.screenTitle}>{t('dashboard.title')}</Text>
+      <SyncIndicator />
 
       <MonthNavigator year={year} month={month} onPrev={prevMonth} onNext={nextMonth} lang={profile?.language} isAtFreeLimit={isAtFreeLimit} onUpgradePress={() => setShowPaywall(true)} />
 

@@ -31,7 +31,16 @@ export default function SetupScreen() {
         .from('profiles')
         .update({ currency, language, onboarding_completed: true })
         .eq('id', user.id);
-      await supabase.rpc('seed_default_categories', { p_user_id: user.id });
+
+      // Solo sembrar categorías si el usuario aún no tiene ninguna
+      const { count } = await supabase
+        .from('categories')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      if (!count || count === 0) {
+        await supabase.rpc('seed_default_categories', { p_user_id: user.id });
+      }
+
       await refreshProfile();
       i18n.changeLanguage(language);
       router.replace('/(tabs)');

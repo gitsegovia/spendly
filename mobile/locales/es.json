@@ -149,6 +149,11 @@
     "items_count_one": "{{count}} artículo",
     "items_count_other": "{{count}} artículos"
   },
+  "sync": {
+    "syncing": "Sincronizando...",
+    "error": "Error de sync",
+    "retry": "Reintentar"
+  },
   "premium": {
     "upgrade": "Obtener Premium",
     "title": "Desbloquea Premium",

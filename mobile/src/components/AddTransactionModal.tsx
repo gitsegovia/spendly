@@ -3,6 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   Modal, ScrollView, KeyboardAvoidingView, Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTranslation } from 'react-i18next';
 import i18n from '../lib/i18n';
@@ -137,6 +138,7 @@ export function AddTransactionModal({ visible, onClose, onSave, categories, type
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
+      <SafeAreaView style={{ flex: 1 }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => { reset(); onClose(); }}>
@@ -282,6 +284,7 @@ export function AddTransactionModal({ visible, onClose, onSave, categories, type
           <View style={{ height: 40 }} />
         </ScrollView>
       </KeyboardAvoidingView>
+      </SafeAreaView>
     </Modal>
   );
 }

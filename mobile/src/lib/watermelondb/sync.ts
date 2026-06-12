@@ -90,7 +90,7 @@ export async function syncWithSupabase(): Promise<void> {
       const since = lastPulledAt ? toIso(lastPulledAt) : '1970-01-01T00:00:00.000Z';
       const now = Date.now();
 
-      const [catsResult, txsResult, itemsResult] = await Promise.all([
+      const [catsResult, txsResult] = await Promise.all([
         supabase
           .from('categories')
           .select('*')
@@ -101,11 +101,20 @@ export async function syncWithSupabase(): Promise<void> {
           .select('*')
           .eq('user_id', userId)
           .gt('updated_at', since),
-        supabase
-          .from('transaction_items')
-          .select('*')
-          .gt('updated_at', since),
       ]);
+
+      // Filtrar transaction_items solo por transacciones del usuario via JOIN
+      const rawItemsResult = await supabase
+        .from('transaction_items')
+        .select('id, transaction_id, name, amount, quantity, is_deleted, created_at, updated_at, transactions!inner(user_id)')
+        .eq('transactions.user_id', userId)
+        .gt('updated_at', since);
+
+      // Eliminar el objeto anidado transactions del resultado
+      const itemsResult = {
+        data: (rawItemsResult.data ?? []).map(({ transactions: _tx, ...item }: any) => item),
+        error: rawItemsResult.error,
+      };
 
       if (catsResult.error) throw catsResult.error;
       if (txsResult.error) throw txsResult.error;
