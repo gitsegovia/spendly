@@ -75,10 +75,10 @@ export function useCategories(type?: TransactionType) {
       await database.write(async () => {
         const cat = await database.collections.get<Category>('categories').find(id);
         await cat.update(() => {
-          cat._raw.name = name.trim();
-          cat._raw.icon = icon;
-          cat._raw.color = color;
-          cat._raw.updated_at = now;
+          (cat._raw as any).name = name.trim();
+          (cat._raw as any).icon = icon;
+          (cat._raw as any).color = color;
+          (cat._raw as any).updated_at = now;
         });
       });
     },

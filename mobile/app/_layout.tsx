@@ -6,6 +6,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { AuthProvider } from '../src/contexts/AuthContext';
 import { useAuth } from '../src/contexts/AuthContext';
 import { DatabaseProvider } from '../src/contexts/DatabaseContext';
+import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { supabase } from '../src/lib/supabase/client';
 import '../src/lib/i18n';
 
@@ -70,14 +71,16 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <AuthProvider>
-      <DatabaseProvider>
-        <StatusBar style="auto" />
-        <AuthGate />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="categories" options={{ animation: 'slide_from_right' }} />
-        </Stack>
-      </DatabaseProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <DatabaseProvider>
+          <StatusBar style="auto" />
+          <AuthGate />
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="categories" options={{ animation: 'slide_from_right' }} />
+          </Stack>
+        </DatabaseProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
