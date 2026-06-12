@@ -101,7 +101,12 @@
     "save_error": "Error al guardar",
     "subscription": "Suscripción",
     "privacy": "Política de privacidad",
-    "terms": "Términos de uso"
+    "terms": "Términos de uso",
+    "export_title": "Exportar datos",
+    "export_csv": "Exportar CSV",
+    "export_csv_hint": "Descargá todas tus transacciones en formato CSV",
+    "export_success": "Archivo listo para compartir",
+    "export_error": "Error al exportar"
   },
   "onboarding": {
     "tagline": "Tomá el control de tus finanzas",

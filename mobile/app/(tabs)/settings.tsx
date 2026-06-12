@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, ActivityIndicator,
+  TouchableOpacity, ActivityIndicator, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../src/contexts/AuthContext';
+import { useFreemium } from '../../src/hooks/useFreemium';
 import { AppMessage } from '../../src/components/AppMessage';
+import { PaywallModal } from '../../src/components/PaywallModal';
 import { supabase } from '../../src/lib/supabase/client';
+import { exportTransactionsCsv } from '../../src/lib/exportCsv';
 import i18n from '../../src/lib/i18n';
 
 const CURRENCIES = ['USD', 'EUR', 'MXN', 'COP', 'ARS', 'PEN', 'CLP'];
@@ -21,9 +24,12 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { session, profile, signOut } = useAuth();
 
+  const { isPremium } = useFreemium();
   const [currency, setCurrency] = useState(profile?.currency ?? 'USD');
   const [language, setLanguage] = useState(profile?.language ?? 'es');
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
@@ -49,6 +55,18 @@ export default function SettingsScreen() {
       setMessage({ text: e.message ?? t('settings.save_error'), type: 'error' });
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleExport() {
+    if (!isPremium) { setShowPaywall(true); return; }
+    try {
+      setExporting(true);
+      await exportTransactionsCsv(profile?.currency ?? 'USD');
+    } catch (e: any) {
+      Alert.alert(t('common.error'), e.message ?? t('settings.export_error'));
+    } finally {
+      setExporting(false);
     }
   }
 
@@ -127,12 +145,35 @@ export default function SettingsScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Exportar */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{t('settings.export_title')}</Text>
+        <TouchableOpacity
+          style={[styles.exportBtn, !isPremium && styles.exportBtnLocked]}
+          onPress={handleExport}
+          disabled={exporting}
+        >
+          {exporting ? (
+            <ActivityIndicator color={isPremium ? '#fff' : '#9CA3AF'} />
+          ) : (
+            <View style={styles.exportRow}>
+              {!isPremium && <Text style={styles.exportLock}>🔒 </Text>}
+              <Text style={[styles.exportBtnText, !isPremium && styles.exportBtnTextLocked]}>
+                {t('settings.export_csv')}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+        <Text style={styles.exportHint}>{t('settings.export_csv_hint')}</Text>
+      </View>
+
       {/* Sesión */}
       <TouchableOpacity style={styles.signOutBtn} onPress={signOut}>
         <Text style={styles.signOutText}>{t('auth.sign_out')}</Text>
       </TouchableOpacity>
 
       <View style={{ height: 24 }} />
+      <PaywallModal visible={showPaywall} onClose={() => setShowPaywall(false)} />
     </ScrollView>
   );
 }
@@ -183,6 +224,17 @@ const styles = StyleSheet.create({
   },
   saveBtnDisabled: { backgroundColor: '#C7D2FE' },
   saveBtnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+
+  exportBtn: {
+    height: 46, backgroundColor: '#4F46E5', borderRadius: 10,
+    justifyContent: 'center', alignItems: 'center', marginBottom: 8,
+  },
+  exportBtnLocked: { backgroundColor: '#F3F4F6' },
+  exportRow: { flexDirection: 'row', alignItems: 'center' },
+  exportLock: { fontSize: 14 },
+  exportBtnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  exportBtnTextLocked: { color: '#9CA3AF' },
+  exportHint: { fontSize: 12, color: '#9CA3AF', textAlign: 'center', paddingBottom: 8 },
 
   signOutBtn: {
     height: 50, backgroundColor: '#fff', borderRadius: 12,
