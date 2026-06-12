@@ -27,7 +27,10 @@ async function setupAndroidChannel() {
 }
 
 async function scheduleDaily(hour: number, minute: number) {
+  console.log('[Notifications] scheduleDaily start', { hour, minute });
+  console.log('[Notifications] SchedulableTriggerInputTypes:', Notifications.SchedulableTriggerInputTypes);
   await Notifications.cancelAllScheduledNotificationsAsync();
+  console.log('[Notifications] cancelled previous, scheduling new...');
   await Notifications.scheduleNotificationAsync({
     content: {
       title: 'Spendly',
@@ -40,6 +43,7 @@ async function scheduleDaily(hour: number, minute: number) {
       minute,
     },
   });
+  console.log('[Notifications] scheduleNotificationAsync done');
 }
 
 interface NotificationSettings {
@@ -92,7 +96,7 @@ export function useNotifications() {
         setEnabled(value);
         await persist({ enabled: value, hour, minute });
       } catch (e) {
-        console.error('[Notifications] toggle error:', e);
+        console.log('[Notifications] toggle error:', JSON.stringify(e), e);
       }
     },
     [hour, minute, persist],
