@@ -22,7 +22,6 @@ async function setupAndroidChannel() {
     await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
       name: 'Daily reminder',
       importance: Notifications.AndroidImportance.DEFAULT,
-      sound: 'default',
     });
   }
 }
@@ -76,18 +75,25 @@ export function useNotifications() {
   const toggle = useCallback(
     async (value: boolean) => {
       setPermissionDenied(false);
-      if (value) {
-        const { status } = await Notifications.requestPermissionsAsync();
-        if (status !== 'granted') {
-          setPermissionDenied(true);
-          return;
+      try {
+        if (value) {
+          const { status } = await Notifications.requestPermissionsAsync();
+          console.log('[Notifications] permission status:', status);
+          if (status !== 'granted') {
+            setPermissionDenied(true);
+            return;
+          }
+          await scheduleDaily(hour, minute);
+          console.log('[Notifications] scheduled daily at', hour, ':', minute);
+        } else {
+          await Notifications.cancelAllScheduledNotificationsAsync();
+          console.log('[Notifications] cancelled all');
         }
-        await scheduleDaily(hour, minute);
-      } else {
-        await Notifications.cancelAllScheduledNotificationsAsync();
+        setEnabled(value);
+        await persist({ enabled: value, hour, minute });
+      } catch (e) {
+        console.error('[Notifications] toggle error:', e);
       }
-      setEnabled(value);
-      await persist({ enabled: value, hour, minute });
     },
     [hour, minute, persist],
   );
@@ -96,8 +102,15 @@ export function useNotifications() {
     async (h: number, m: number) => {
       setHour(h);
       setMinute(m);
-      if (enabled) await scheduleDaily(h, m);
-      await persist({ enabled, hour: h, minute: m });
+      try {
+        if (enabled) {
+          await scheduleDaily(h, m);
+          console.log('[Notifications] rescheduled at', h, ':', m);
+        }
+        await persist({ enabled, hour: h, minute: m });
+      } catch (e) {
+        console.error('[Notifications] updateTime error:', e);
+      }
     },
     [enabled, persist],
   );
