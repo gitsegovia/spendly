@@ -13,10 +13,21 @@ import {
 import { useTranslation } from 'react-i18next';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Crypto from 'expo-crypto';
 import { supabase } from '../../src/lib/supabase/client';
 import { useAuth } from '../../src/contexts/AuthContext';
 
 WebBrowser.maybeCompleteAuthSession();
+
+function generateNonce(length = 32): string {
+  const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += charset.charAt(Math.floor(Math.random() * charset.length));
+  }
+  return result;
+}
 
 export default function LoginScreen() {
   const { t } = useTranslation();
@@ -51,7 +62,7 @@ export default function LoginScreen() {
     }
   }
 
-  async function handleOAuth(provider: 'google' | 'apple') {
+  async function handleOAuth(provider: 'google') {
     try {
       setLoading(true);
       const { data, error } = await supabase.auth.signInWithOAuth({
@@ -61,7 +72,6 @@ export default function LoginScreen() {
       if (error) throw error;
       if (!data?.url) return;
 
-      // openAuthSessionAsync cierra el browser automáticamente al recibir el redirect
       const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
 
       if (result.type === 'success') {
@@ -91,8 +101,7 @@ export default function LoginScreen() {
           if (err) throw err;
         }
       }
-      // Android fallback: si openAuthSessionAsync no intercepta, el deep link
-      // llega a _layout.tsx → Linking.addEventListener → setSession
+      // Android fallback: deep link llega a _layout.tsx → setSession
     } catch (e: any) {
       Alert.alert(t('common.error'), e.message);
     } finally {
@@ -100,7 +109,43 @@ export default function LoginScreen() {
     }
   }
 
-  // authLoading cubre el gap entre browser close y loadProfile complete
+  async function signInWithApple() {
+    try {
+      setLoading(true);
+      // Nonce raw se envía a Supabase; Apple recibe el SHA256 del mismo
+      const rawNonce = generateNonce();
+      const hashedNonce = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        rawNonce,
+      );
+
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+        nonce: hashedNonce,
+      });
+
+      if (!credential.identityToken) throw new Error('Apple did not return identity token');
+
+      const { error } = await supabase.auth.signInWithIdToken({
+        provider: 'apple',
+        token: credential.identityToken,
+        nonce: rawNonce,
+      });
+      if (error) throw error;
+    } catch (e: any) {
+      // ERR_REQUEST_CANCELED = usuario cerró el sheet, no es un error real
+      if (e.code !== 'ERR_REQUEST_CANCELED') {
+        Alert.alert(t('common.error'), e.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // authLoading cubre el gap entre autenticación y loadProfile complete
   if (authLoading) {
     return (
       <View style={styles.loadingOverlay}>
@@ -175,13 +220,13 @@ export default function LoginScreen() {
         </TouchableOpacity>
 
         {Platform.OS === 'ios' && (
-          <TouchableOpacity
-            style={[styles.button, styles.appleButton]}
-            onPress={() => handleOAuth('apple')}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>{t('auth.sign_in_apple')}</Text>
-          </TouchableOpacity>
+          <AppleAuthentication.AppleAuthenticationButton
+            buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+            buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+            cornerRadius={12}
+            style={styles.appleButton}
+            onPress={signInWithApple}
+          />
         )}
       </View>
     </KeyboardAvoidingView>
@@ -268,7 +313,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#4285F4',
   },
   appleButton: {
-    backgroundColor: '#000',
+    height: 52,
+    width: '100%',
   },
   buttonText: {
     color: '#fff',
