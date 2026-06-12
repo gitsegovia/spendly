@@ -171,6 +171,13 @@
     "delete_title": "Eliminar categoría",
     "delete_message": "Las transacciones existentes no se borrarán."
   },
+  "notifications": {
+    "title": "Notificaciones",
+    "reminder": "Recordatorio diario",
+    "reminder_time": "Hora del recordatorio",
+    "reminder_body": "¿Ya registraste tus gastos de hoy?",
+    "permission_denied": "Permiso denegado. Activalo desde los Ajustes del sistema."
+  },
   "sync": {
     "syncing": "Sincronizando...",
     "error": "Error de sync",

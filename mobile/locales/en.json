@@ -171,6 +171,13 @@
     "delete_title": "Delete category",
     "delete_message": "Existing transactions will not be deleted."
   },
+  "notifications": {
+    "title": "Notifications",
+    "reminder": "Daily reminder",
+    "reminder_time": "Reminder time",
+    "reminder_body": "Did you log today's expenses?",
+    "permission_denied": "Permission denied. Enable it from system Settings."
+  },
   "sync": {
     "syncing": "Syncing...",
     "error": "Sync error",

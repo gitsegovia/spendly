@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, ActivityIndicator, Alert,
+  TouchableOpacity, ActivityIndicator, Alert, Switch, Platform,
 } from 'react-native';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useFreemium } from '../../src/hooks/useFreemium';
+import { useNotifications } from '../../src/hooks/useNotifications';
 import { AppMessage } from '../../src/components/AppMessage';
 import { PaywallModal } from '../../src/components/PaywallModal';
 import { supabase } from '../../src/lib/supabase/client';
@@ -27,6 +29,8 @@ export default function SettingsScreen() {
   const { session, profile, signOut } = useAuth();
 
   const { isPremium } = useFreemium();
+  const { enabled: notifEnabled, hour, minute, loading: notifLoading, permissionDenied, toggle: toggleNotif, updateTime } = useNotifications();
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const [currency, setCurrency] = useState(profile?.currency ?? 'USD');
   const [language, setLanguage] = useState(profile?.language ?? 'es');
   const [saving, setSaving] = useState(false);
@@ -151,6 +155,49 @@ export default function SettingsScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Notificaciones */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{t('notifications.title')}</Text>
+        <View style={[styles.row, { borderBottomWidth: notifEnabled ? 1 : 0 }]}>
+          <Text style={styles.rowLabel}>{t('notifications.reminder')}</Text>
+          {notifLoading ? (
+            <ActivityIndicator size="small" color="#4F46E5" />
+          ) : (
+            <Switch
+              value={notifEnabled}
+              onValueChange={toggleNotif}
+              trackColor={{ false: '#E5E7EB', true: '#C7D2FE' }}
+              thumbColor={notifEnabled ? '#4F46E5' : '#9CA3AF'}
+            />
+          )}
+        </View>
+        {notifEnabled && (
+          <TouchableOpacity
+            style={[styles.row, { borderBottomWidth: 0 }]}
+            onPress={() => setShowTimePicker(true)}
+          >
+            <Text style={styles.rowLabel}>{t('notifications.reminder_time')}</Text>
+            <Text style={styles.rowValue}>
+              {String(hour).padStart(2, '0')}:{String(minute).padStart(2, '0')}
+            </Text>
+          </TouchableOpacity>
+        )}
+        {notifEnabled && showTimePicker && (
+          <DateTimePicker
+            mode="time"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            value={(() => { const d = new Date(); d.setHours(hour, minute, 0, 0); return d; })()}
+            onChange={(_: DateTimePickerEvent, date?: Date) => {
+              if (Platform.OS === 'android') setShowTimePicker(false);
+              if (date) updateTime(date.getHours(), date.getMinutes());
+            }}
+          />
+        )}
+        {permissionDenied && (
+          <Text style={styles.permissionDenied}>{t('notifications.permission_denied')}</Text>
+        )}
+      </View>
+
       {/* Exportar */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t('settings.export_title')}</Text>
@@ -242,6 +289,10 @@ const styles = StyleSheet.create({
   exportBtnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
   exportBtnTextLocked: { color: '#9CA3AF' },
   exportHint: { fontSize: 12, color: '#9CA3AF', textAlign: 'center', paddingBottom: 8 },
+
+  permissionDenied: {
+    fontSize: 12, color: '#EF4444', paddingHorizontal: 4, paddingBottom: 10, lineHeight: 18,
+  },
 
   signOutBtn: {
     height: 50, backgroundColor: '#fff', borderRadius: 12,

@@ -42,7 +42,13 @@
       "expo-router",
       "expo-status-bar",
       "@react-native-community/datetimepicker",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-notifications",
+        {
+          "iosDeploymentTarget": "15.1"
+        }
+      ]
     ],
     "extra": {
       "eas": {
