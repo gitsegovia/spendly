@@ -5,6 +5,7 @@ import { Platform } from 'react-native';
 import i18n from '../lib/i18n';
 
 const STORAGE_KEY = 'spendly_notifications';
+const NOTIF_ID_KEY = 'spendly_notification_id';
 const CHANNEL_ID = 'daily-reminder';
 
 Notifications.setNotificationHandler({
@@ -26,12 +27,20 @@ async function setupAndroidChannel() {
   }
 }
 
+async function cancelPrevious() {
+  const prevId = await AsyncStorage.getItem(NOTIF_ID_KEY);
+  if (prevId) {
+    console.log('[Notifications] cancelling previous id:', prevId);
+    await Notifications.cancelScheduledNotificationAsync(prevId);
+    await AsyncStorage.removeItem(NOTIF_ID_KEY);
+  }
+}
+
 async function scheduleDaily(hour: number, minute: number) {
   console.log('[Notifications] scheduleDaily start', { hour, minute });
-  console.log('[Notifications] SchedulableTriggerInputTypes:', Notifications.SchedulableTriggerInputTypes);
-  await Notifications.cancelAllScheduledNotificationsAsync();
-  console.log('[Notifications] cancelled previous, scheduling new...');
-  await Notifications.scheduleNotificationAsync({
+  await cancelPrevious();
+  console.log('[Notifications] scheduling new...');
+  const id = await Notifications.scheduleNotificationAsync({
     content: {
       title: 'Spendly',
       body: i18n.t('notifications.reminder_body'),
@@ -43,7 +52,8 @@ async function scheduleDaily(hour: number, minute: number) {
       minute,
     },
   });
-  console.log('[Notifications] scheduleNotificationAsync done');
+  await AsyncStorage.setItem(NOTIF_ID_KEY, id);
+  console.log('[Notifications] scheduled, id:', id);
 }
 
 interface NotificationSettings {
@@ -90,8 +100,8 @@ export function useNotifications() {
           await scheduleDaily(hour, minute);
           console.log('[Notifications] scheduled daily at', hour, ':', minute);
         } else {
-          await Notifications.cancelAllScheduledNotificationsAsync();
-          console.log('[Notifications] cancelled all');
+          await cancelPrevious();
+          console.log('[Notifications] disabled, previous cancelled');
         }
         setEnabled(value);
         await persist({ enabled: value, hour, minute });
