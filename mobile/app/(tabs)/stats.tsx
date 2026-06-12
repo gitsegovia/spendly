@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { PieChart } from 'react-native-gifted-charts';
+import { BarChart } from 'react-native-gifted-charts';
 import { categoryLabel } from '../../src/lib/categoryName';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useMonthlyStats } from '../../src/hooks/useMonthlyStats';
 import { useMonthlyTrend } from '../../src/hooks/useMonthlyTrend';
 import { MonthNavigator } from '../../src/components/MonthNavigator';
-
-const BAR_MAX_HEIGHT = 80;
 
 export default function StatsScreen() {
   const { t } = useTranslation();
@@ -34,8 +34,33 @@ export default function StatsScreen() {
     else setMonth(m => m + 1);
   }
 
-  const trendMax = Math.max(...trend.flatMap(m => [m.income, m.expenses]), 1);
   const balanceColor = stats.balance >= 0 ? '#10B981' : '#EF4444';
+
+  // Donut chart data
+  const pieData = stats.expensesByCategory.map(cat => ({
+    value: cat.total,
+    color: cat.category_color || '#9CA3AF',
+  }));
+
+  // Grouped bar chart data: [income, expense] pairs per month
+  const trendMax = Math.max(...trend.flatMap(m => [m.income, m.expenses]), 1);
+  const barData = trend.flatMap((m, i) => [
+    {
+      value: m.income,
+      frontColor: '#10B981',
+      label: m.label,
+      spacing: 3,
+      labelTextStyle: {
+        fontSize: 10,
+        color: (m.year === year && m.month === month) ? '#4F46E5' : '#9CA3AF',
+      },
+    },
+    {
+      value: m.expenses,
+      frontColor: '#EF4444',
+      spacing: i < trend.length - 1 ? 18 : 0,
+    },
+  ]);
 
   return (
     <ScrollView
@@ -73,33 +98,44 @@ export default function StatsScreen() {
             </Text>
           </View>
 
-          {/* Gastos por categoría */}
+          {/* Donut chart — gastos por categoría */}
           {stats.expensesByCategory.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>{t('stats.expenses_by_category')}</Text>
-              {stats.expensesByCategory.map((cat) => {
-                const pct = stats.totalExpenses > 0
-                  ? (cat.total / stats.totalExpenses) * 100
-                  : 0;
-                return (
-                  <View key={cat.category_id} style={styles.catItem}>
-                    <View style={styles.catLabelRow}>
-                      <View style={[styles.catDot, { backgroundColor: cat.category_color }]} />
-                      <Text style={styles.catName}>{categoryLabel(cat.category_name, t)}</Text>
-                      <Text style={styles.catPct}>{pct.toFixed(0)}%</Text>
-                      <Text style={styles.catAmount}>{currency} {cat.total.toFixed(2)}</Text>
+              <View style={styles.chartRow}>
+                <PieChart
+                  data={pieData}
+                  donut
+                  radius={80}
+                  innerRadius={54}
+                  centerLabelComponent={() => (
+                    <View style={styles.donutCenter}>
+                      <Text style={styles.donutLabel}>{currency}</Text>
+                      <Text style={styles.donutAmount}>{stats.totalExpenses.toFixed(0)}</Text>
                     </View>
-                    <View style={styles.barTrack}>
-                      <View
-                        style={[
-                          styles.barFill,
-                          { width: `${pct}%` as any, backgroundColor: cat.category_color },
-                        ]}
-                      />
-                    </View>
-                  </View>
-                );
-              })}
+                  )}
+                />
+                <View style={styles.legend}>
+                  {stats.expensesByCategory.map((cat) => {
+                    const pct = stats.totalExpenses > 0
+                      ? (cat.total / stats.totalExpenses) * 100
+                      : 0;
+                    return (
+                      <View key={cat.category_id} style={styles.legendItem}>
+                        <View style={[styles.legendDot, { backgroundColor: cat.category_color || '#9CA3AF' }]} />
+                        <View style={styles.legendText}>
+                          <Text style={styles.legendName} numberOfLines={1}>
+                            {categoryLabel(cat.category_name, t)}
+                          </Text>
+                          <Text style={styles.legendDetail}>
+                            {pct.toFixed(0)}% · {currency} {cat.total.toFixed(0)}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
             </View>
           )}
 
@@ -118,43 +154,33 @@ export default function StatsScreen() {
           <ActivityIndicator color="#4F46E5" style={{ marginVertical: 20 }} />
         ) : (
           <>
-            <View style={styles.legendRow}>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#10B981' }]} />
-                <Text style={styles.legendLabel}>{t('dashboard.total_income')}</Text>
+            <View style={styles.trendLegend}>
+              <View style={styles.trendLegendItem}>
+                <View style={[styles.trendDot, { backgroundColor: '#10B981' }]} />
+                <Text style={styles.trendLegendLabel}>{t('dashboard.total_income')}</Text>
               </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#EF4444' }]} />
-                <Text style={styles.legendLabel}>{t('dashboard.total_expenses')}</Text>
+              <View style={styles.trendLegendItem}>
+                <View style={[styles.trendDot, { backgroundColor: '#EF4444' }]} />
+                <Text style={styles.trendLegendLabel}>{t('dashboard.total_expenses')}</Text>
               </View>
             </View>
 
-            <View style={styles.chart}>
-              {trend.map((m) => {
-                const incomeH = trendMax > 0 ? (m.income / trendMax) * BAR_MAX_HEIGHT : 0;
-                const expenseH = trendMax > 0 ? (m.expenses / trendMax) * BAR_MAX_HEIGHT : 0;
-                const isCurrentMonth = m.year === year && m.month === month;
-                return (
-                  <View key={`${m.year}-${m.month}`} style={styles.chartColumn}>
-                    <View style={styles.barsGroup}>
-                      <View style={[
-                        styles.bar,
-                        { height: Math.max(incomeH, 2), backgroundColor: '#10B981' },
-                        isCurrentMonth && styles.barHighlight,
-                      ]} />
-                      <View style={[
-                        styles.bar,
-                        { height: Math.max(expenseH, 2), backgroundColor: '#EF4444' },
-                        isCurrentMonth && styles.barHighlight,
-                      ]} />
-                    </View>
-                    <Text style={[styles.chartLabel, isCurrentMonth && styles.chartLabelActive]}>
-                      {m.label}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
+            <BarChart
+              data={barData}
+              barWidth={9}
+              barBorderTopLeftRadius={3}
+              barBorderTopRightRadius={3}
+              height={110}
+              noOfSections={3}
+              maxValue={Math.ceil(trendMax * 1.25)}
+              yAxisThickness={0}
+              xAxisThickness={1}
+              xAxisColor="#E5E7EB"
+              rulesColor="#F3F4F6"
+              hideYAxisText
+              xAxisLabelTextStyle={{ fontSize: 10, color: '#9CA3AF' }}
+              isAnimated
+            />
           </>
         )}
       </View>
@@ -190,31 +216,26 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 16 },
 
-  catItem: { marginBottom: 14 },
-  catLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
-  catDot: { width: 10, height: 10, borderRadius: 5 },
-  catName: { flex: 1, fontSize: 14, color: '#374151' },
-  catPct: { fontSize: 12, color: '#9CA3AF', width: 32, textAlign: 'right' },
-  catAmount: { fontSize: 13, fontWeight: '600', color: '#111827', width: 80, textAlign: 'right' },
-  barTrack: { height: 6, backgroundColor: '#F3F4F6', borderRadius: 3, overflow: 'hidden' },
-  barFill: { height: 6, borderRadius: 3 },
+  // Donut chart layout
+  chartRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  donutCenter: { alignItems: 'center' },
+  donutLabel: { fontSize: 11, color: '#6B7280' },
+  donutAmount: { fontSize: 15, fontWeight: '700', color: '#111827' },
+
+  // Legend al lado del donut
+  legend: { flex: 1, gap: 10 },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  legendDot: { width: 10, height: 10, borderRadius: 5, flexShrink: 0 },
+  legendText: { flex: 1 },
+  legendName: { fontSize: 13, color: '#374151', fontWeight: '500' },
+  legendDetail: { fontSize: 11, color: '#9CA3AF' },
 
   empty: { alignItems: 'center', paddingVertical: 32 },
   emptyText: { fontSize: 14, color: '#9CA3AF' },
 
-  legendRow: { flexDirection: 'row', gap: 16, marginBottom: 16 },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  legendDot: { width: 10, height: 10, borderRadius: 5 },
-  legendLabel: { fontSize: 13, color: '#6B7280' },
-
-  chart: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
-  chartColumn: { flex: 1, alignItems: 'center' },
-  barsGroup: {
-    flexDirection: 'row', gap: 3, alignItems: 'flex-end',
-    height: BAR_MAX_HEIGHT, marginBottom: 8,
-  },
-  bar: { width: 10, borderRadius: 4, minHeight: 2 },
-  barHighlight: { opacity: 1 },
-  chartLabel: { fontSize: 11, color: '#9CA3AF' },
-  chartLabelActive: { color: '#4F46E5', fontWeight: '600' },
+  // Trend section
+  trendLegend: { flexDirection: 'row', gap: 16, marginBottom: 12 },
+  trendLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  trendDot: { width: 10, height: 10, borderRadius: 5 },
+  trendLegendLabel: { fontSize: 13, color: '#6B7280' },
 });

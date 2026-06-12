@@ -48,6 +48,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else if (event === 'INITIAL_SESSION' && !session) {
         console.log('[Auth] INITIAL_SESSION sin sesión — redirigiendo a login');
         setLoading(false);
+      } else if (event === 'SIGNED_IN' && session && loadedForUser.current !== session.user.id) {
+        // Nuevo usuario — mostrar loading mientras loadProfile corre
+        setLoading(true);
       }
     });
 
@@ -58,7 +61,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // de onAuthStateChange, garantizando que el lock de auth ya fue liberado.
   useEffect(() => {
     if (!session) return;
-    if (loadedForUser.current === session.user.id) return;
+    if (loadedForUser.current === session.user.id) {
+      setLoading(false);
+      return;
+    }
     loadedForUser.current = session.user.id;
     console.log('[Auth] useEffect session — disparando loadProfile para', session.user.email);
     loadProfile(session.user.id);
@@ -67,18 +73,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function loadProfile(userId: string) {
     console.log('[Auth] loadProfile start — userId:', userId);
     const controller = new AbortController();
+    let timeoutId: ReturnType<typeof setTimeout>;
     try {
       console.log('[Auth] consultando profiles en Supabase...');
       const { data, error } = await Promise.race([
         supabase.from('profiles').select('*').eq('id', userId).single().abortSignal(controller.signal),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => {
+        new Promise<never>((_, reject) => {
+          timeoutId = setTimeout(() => {
             console.warn('[Auth] loadProfile timeout 6s — abortando request');
             controller.abort();
             reject(new Error('loadProfile timeout 6s'));
-          }, 6000)
-        ),
-      ]);
+          }, 6000);
+        }),
+      ]).finally(() => clearTimeout(timeoutId));
       console.log('[Auth] profiles respuesta — data:', !!data, '| error:', error?.message ?? 'ninguno');
       if (error) console.error('[Auth] loadProfile error:', error.message);
       if (data) setProfile(data as Profile);

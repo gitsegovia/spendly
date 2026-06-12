@@ -14,11 +14,13 @@ import { useTranslation } from 'react-i18next';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { supabase } from '../../src/lib/supabase/client';
+import { useAuth } from '../../src/contexts/AuthContext';
 
 WebBrowser.maybeCompleteAuthSession();
 
 export default function LoginScreen() {
   const { t } = useTranslation();
+  const { loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -49,18 +51,48 @@ export default function LoginScreen() {
     }
   }
 
-  async function signInWithGoogle() {
+  async function handleOAuth(provider: 'google' | 'apple') {
     try {
       setLoading(true);
       const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
+        provider,
         options: { redirectTo, skipBrowserRedirect: true },
       });
       if (error) throw error;
-      if (data?.url) {
-        // openBrowserAsync (SFSafariViewController) + deep link handler en _layout
-        await WebBrowser.openBrowserAsync(data.url);
+      if (!data?.url) return;
+
+      // openAuthSessionAsync cierra el browser automáticamente al recibir el redirect
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+
+      if (result.type === 'success') {
+        const resultUrl = result.url;
+
+        // Implicit flow: tokens en hash fragment
+        if (resultUrl.includes('#access_token=')) {
+          const hash = resultUrl.split('#')[1] ?? '';
+          const params: Record<string, string> = {};
+          for (const part of hash.split('&')) {
+            const [k, v] = part.split('=');
+            if (k) params[k] = decodeURIComponent(v ?? '');
+          }
+          const { error: err } = await supabase.auth.setSession({
+            access_token: params.access_token,
+            refresh_token: params.refresh_token,
+          });
+          if (err) throw err;
+          return;
+        }
+
+        // PKCE flow: code en query params
+        const parsed = Linking.parse(resultUrl);
+        const code = parsed.queryParams?.code as string | undefined;
+        if (code) {
+          const { error: err } = await supabase.auth.exchangeCodeForSession(code);
+          if (err) throw err;
+        }
       }
+      // Android fallback: si openAuthSessionAsync no intercepta, el deep link
+      // llega a _layout.tsx → Linking.addEventListener → setSession
     } catch (e: any) {
       Alert.alert(t('common.error'), e.message);
     } finally {
@@ -68,22 +100,13 @@ export default function LoginScreen() {
     }
   }
 
-  async function signInWithApple() {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'apple',
-        options: { redirectTo, skipBrowserRedirect: true },
-      });
-      if (error) throw error;
-      if (data?.url) {
-        await WebBrowser.openBrowserAsync(data.url);
-      }
-    } catch (e: any) {
-      Alert.alert(t('common.error'), e.message);
-    } finally {
-      setLoading(false);
-    }
+  // authLoading cubre el gap entre browser close y loadProfile complete
+  if (authLoading) {
+    return (
+      <View style={styles.loadingOverlay}>
+        <ActivityIndicator size="large" color="#4F46E5" />
+      </View>
+    );
   }
 
   return (
@@ -145,7 +168,7 @@ export default function LoginScreen() {
       <View style={styles.oauthButtons}>
         <TouchableOpacity
           style={[styles.button, styles.googleButton]}
-          onPress={signInWithGoogle}
+          onPress={() => handleOAuth('google')}
           disabled={loading}
         >
           <Text style={styles.buttonText}>{t('auth.sign_in_google')}</Text>
@@ -154,7 +177,7 @@ export default function LoginScreen() {
         {Platform.OS === 'ios' && (
           <TouchableOpacity
             style={[styles.button, styles.appleButton]}
-            onPress={signInWithApple}
+            onPress={() => handleOAuth('apple')}
             disabled={loading}
           >
             <Text style={styles.buttonText}>{t('auth.sign_in_apple')}</Text>
@@ -166,6 +189,12 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
+  loadingOverlay: {
+    flex: 1,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   container: {
     flex: 1,
     backgroundColor: '#fff',

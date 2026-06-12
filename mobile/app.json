@@ -32,7 +32,8 @@
             "useFrameworks": "static"
           },
           "android": {
-            "kotlinVersion": "1.9.0"
+            "kotlinVersion": "2.1.20",
+            "ndkVersion": "27.0.12077973"
           }
         }
       ],

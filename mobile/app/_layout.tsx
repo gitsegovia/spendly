@@ -5,6 +5,7 @@ import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { AuthProvider } from '../src/contexts/AuthContext';
 import { useAuth } from '../src/contexts/AuthContext';
+import { DatabaseProvider } from '../src/contexts/DatabaseContext';
 import { supabase } from '../src/lib/supabase/client';
 import '../src/lib/i18n';
 
@@ -38,6 +39,25 @@ export default function RootLayout() {
   useEffect(() => {
     const sub = Linking.addEventListener('url', async ({ url }) => {
       console.log('[Linking] url recibida:', url);
+
+      // Implicit flow: tokens en hash fragment (#access_token=...&refresh_token=...)
+      if (url.includes('#access_token=')) {
+        WebBrowser.dismissBrowser();
+        const hash = url.split('#')[1] ?? '';
+        const params: Record<string, string> = {};
+        for (const part of hash.split('&')) {
+          const [k, v] = part.split('=');
+          if (k) params[k] = decodeURIComponent(v ?? '');
+        }
+        const { error } = await supabase.auth.setSession({
+          access_token: params.access_token,
+          refresh_token: params.refresh_token,
+        });
+        console.log('[Linking] setSession error:', error?.message ?? 'none');
+        return;
+      }
+
+      // PKCE flow: code en query params (?code=...)
       const parsed = Linking.parse(url);
       const code = parsed.queryParams?.code as string | undefined;
       if (code) {
@@ -51,9 +71,11 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <StatusBar style="auto" />
-      <AuthGate />
-      <Stack screenOptions={{ headerShown: false }} />
+      <DatabaseProvider>
+        <StatusBar style="auto" />
+        <AuthGate />
+        <Stack screenOptions={{ headerShown: false }} />
+      </DatabaseProvider>
     </AuthProvider>
   );
 }
