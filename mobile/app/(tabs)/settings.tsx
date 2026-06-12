@@ -4,6 +4,7 @@ import {
   TouchableOpacity, ActivityIndicator, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useFreemium } from '../../src/hooks/useFreemium';
@@ -22,6 +23,7 @@ const LANGUAGES = [
 export default function SettingsScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { session, profile, signOut } = useAuth();
 
   const { isPremium } = useFreemium();
@@ -86,6 +88,10 @@ export default function SettingsScreen() {
           <Text style={styles.rowLabel}>{t('settings.email')}</Text>
           <Text style={styles.rowValue} numberOfLines={1}>{session?.user.email}</Text>
         </View>
+        <TouchableOpacity style={styles.row} onPress={() => router.push('/categories')}>
+          <Text style={styles.rowLabel}>{t('settings.categories_title')}</Text>
+          <Text style={styles.rowChevron}>›</Text>
+        </TouchableOpacity>
         <View style={[styles.row, { borderBottomWidth: 0 }]}>
           <Text style={styles.rowLabel}>{t('settings.plan')}</Text>
           <View style={[styles.planBadge, profile?.plan === 'premium' ? styles.planPremium : styles.planFree]}>
@@ -200,6 +206,7 @@ const styles = StyleSheet.create({
   },
   rowLabel: { fontSize: 15, color: '#374151' },
   rowValue: { fontSize: 15, color: '#9CA3AF', maxWidth: '60%' },
+  rowChevron: { fontSize: 20, color: '#9CA3AF' },
 
   planBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   planFree: { backgroundColor: '#F3F4F6' },

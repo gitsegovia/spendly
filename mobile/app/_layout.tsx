@@ -74,7 +74,9 @@ export default function RootLayout() {
       <DatabaseProvider>
         <StatusBar style="auto" />
         <AuthGate />
-        <Stack screenOptions={{ headerShown: false }} />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="categories" options={{ animation: 'slide_from_right' }} />
+        </Stack>
       </DatabaseProvider>
     </AuthProvider>
   );

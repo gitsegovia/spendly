@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Q } from '@nozbe/watermelondb';
 import { database } from '../lib/watermelondb/database';
 import Category from '../lib/watermelondb/models/Category';
 import { Category as CategoryType, TransactionType } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 
 function toCategory(c: Category): CategoryType {
   return {
@@ -19,6 +20,7 @@ function toCategory(c: Category): CategoryType {
 }
 
 export function useCategories(type?: TransactionType) {
+  const { user } = useAuth();
   const [categories, setCategories] = useState<CategoryType[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -44,5 +46,51 @@ export function useCategories(type?: TransactionType) {
     return () => subscription.unsubscribe();
   }, [type]);
 
-  return { categories, loading };
+  const addCategory = useCallback(
+    async (name: string, icon: string, color: string, catType: TransactionType) => {
+      if (!user) throw new Error('Not authenticated');
+      const now = Date.now();
+      await database.write(async () => {
+        await database.collections.get<Category>('categories').create((record) => {
+          Object.assign(record._raw, {
+            name: name.trim(),
+            icon,
+            color,
+            type: catType,
+            is_default: false,
+            user_id: user.id,
+            is_deleted: false,
+            created_at: now,
+            updated_at: now,
+          });
+        });
+      });
+    },
+    [user],
+  );
+
+  const updateCategory = useCallback(
+    async (id: string, name: string, icon: string, color: string) => {
+      const now = Date.now();
+      await database.write(async () => {
+        const cat = await database.collections.get<Category>('categories').find(id);
+        await cat.update(() => {
+          cat._raw.name = name.trim();
+          cat._raw.icon = icon;
+          cat._raw.color = color;
+          cat._raw.updated_at = now;
+        });
+      });
+    },
+    [],
+  );
+
+  const deleteCategory = useCallback(async (id: string) => {
+    await database.write(async () => {
+      const cat = await database.collections.get<Category>('categories').find(id);
+      await cat.markAsDeleted();
+    });
+  }, []);
+
+  return { categories, loading, addCategory, updateCategory, deleteCategory };
 }
