@@ -5,7 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { categoryLabel } from '../../src/lib/categoryName';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useMonthlyStats } from '../../src/hooks/useMonthlyStats';
+import { useFreemium } from '../../src/hooks/useFreemium';
 import { MonthNavigator } from '../../src/components/MonthNavigator';
+import { PaywallModal } from '../../src/components/PaywallModal';
 
 export default function DashboardScreen() {
   const { t } = useTranslation();
@@ -14,7 +16,13 @@ export default function DashboardScreen() {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
+  const [showPaywall, setShowPaywall] = useState(false);
   const { stats, loading } = useMonthlyStats(year, month);
+  const { isMonthLocked } = useFreemium();
+
+  const prevMonthYear = month === 1 ? year - 1 : year;
+  const prevMonthNum = month === 1 ? 12 : month - 1;
+  const isAtFreeLimit = isMonthLocked(prevMonthYear, prevMonthNum);
 
   const currency = profile?.currency ?? 'USD';
 
@@ -36,7 +44,7 @@ export default function DashboardScreen() {
     <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}>
       <Text style={styles.screenTitle}>{t('dashboard.title')}</Text>
 
-      <MonthNavigator year={year} month={month} onPrev={prevMonth} onNext={nextMonth} lang={profile?.language} />
+      <MonthNavigator year={year} month={month} onPrev={prevMonth} onNext={nextMonth} lang={profile?.language} isAtFreeLimit={isAtFreeLimit} onUpgradePress={() => setShowPaywall(true)} />
 
       {loading ? (
         <ActivityIndicator style={{ marginTop: 40 }} color="#4F46E5" />
@@ -93,6 +101,7 @@ export default function DashboardScreen() {
           )}
         </>
       )}
+      <PaywallModal visible={showPaywall} onClose={() => setShowPaywall(false)} />
     </ScrollView>
   );
 }

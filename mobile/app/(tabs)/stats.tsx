@@ -8,7 +8,9 @@ import { categoryLabel } from '../../src/lib/categoryName';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useMonthlyStats } from '../../src/hooks/useMonthlyStats';
 import { useMonthlyTrend } from '../../src/hooks/useMonthlyTrend';
+import { useFreemium } from '../../src/hooks/useFreemium';
 import { MonthNavigator } from '../../src/components/MonthNavigator';
+import { PaywallModal } from '../../src/components/PaywallModal';
 
 export default function StatsScreen() {
   const { t } = useTranslation();
@@ -18,10 +20,15 @@ export default function StatsScreen() {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
 
+  const [showPaywall, setShowPaywall] = useState(false);
   const { stats, loading: statsLoading } = useMonthlyStats(year, month);
   const { trend, loading: trendLoading } = useMonthlyTrend(year, month);
+  const { isMonthLocked } = useFreemium();
 
   const currency = profile?.currency ?? 'USD';
+  const prevMonthYear = month === 1 ? year - 1 : year;
+  const prevMonthNum = month === 1 ? 12 : month - 1;
+  const isAtFreeLimit = isMonthLocked(prevMonthYear, prevMonthNum);
 
   function prevMonth() {
     if (month === 1) { setYear(y => y - 1); setMonth(12); }
@@ -69,7 +76,7 @@ export default function StatsScreen() {
     >
       <Text style={styles.screenTitle}>{t('stats.title')}</Text>
 
-      <MonthNavigator year={year} month={month} onPrev={prevMonth} onNext={nextMonth} lang={profile?.language} />
+      <MonthNavigator year={year} month={month} onPrev={prevMonth} onNext={nextMonth} lang={profile?.language} isAtFreeLimit={isAtFreeLimit} onUpgradePress={() => setShowPaywall(true)} />
 
       {statsLoading ? (
         <ActivityIndicator style={{ marginTop: 32 }} color="#4F46E5" />
@@ -186,6 +193,7 @@ export default function StatsScreen() {
       </View>
 
       <View style={{ height: 24 }} />
+      <PaywallModal visible={showPaywall} onClose={() => setShowPaywall(false)} />
     </ScrollView>
   );
 }

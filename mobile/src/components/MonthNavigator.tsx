@@ -9,17 +9,31 @@ interface Props {
   onPrev: () => void;
   onNext: () => void;
   lang?: string;
+  isAtFreeLimit?: boolean;
+  onUpgradePress?: () => void;
 }
 
-export function MonthNavigator({ year, month, onPrev, onNext, lang = 'es' }: Props) {
+export function MonthNavigator({ year, month, onPrev, onNext, lang = 'es', isAtFreeLimit, onUpgradePress }: Props) {
   const months = lang === 'en' ? MONTHS_EN : MONTHS_ES;
   const now = new Date();
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
 
+  function handlePrev() {
+    if (isAtFreeLimit) {
+      onUpgradePress?.();
+    } else {
+      onPrev();
+    }
+  }
+
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={onPrev} style={styles.arrow}>
-        <Text style={styles.arrowText}>‹</Text>
+      <TouchableOpacity onPress={handlePrev} style={styles.arrow}>
+        {isAtFreeLimit ? (
+          <Text style={styles.lockIcon}>🔒</Text>
+        ) : (
+          <Text style={styles.arrowText}>‹</Text>
+        )}
       </TouchableOpacity>
       <Text style={styles.label}>
         {months[month - 1]} {year}
@@ -41,6 +55,7 @@ const styles = StyleSheet.create({
   },
   arrow: { padding: 8 },
   arrowText: { fontSize: 28, color: '#4F46E5', fontWeight: '300' },
+  lockIcon: { fontSize: 20 },
   disabled: { color: '#D1D5DB' },
   label: { fontSize: 17, fontWeight: '600', color: '#111827', minWidth: 160, textAlign: 'center' },
 });

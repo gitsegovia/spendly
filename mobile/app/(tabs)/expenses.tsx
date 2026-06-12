@@ -5,9 +5,11 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useTransactions } from '../../src/hooks/useTransactions';
 import { useCategories } from '../../src/hooks/useCategories';
+import { useFreemium } from '../../src/hooks/useFreemium';
 import { TransactionCard } from '../../src/components/TransactionCard';
 import { AddTransactionModal } from '../../src/components/AddTransactionModal';
 import { MonthNavigator } from '../../src/components/MonthNavigator';
+import { PaywallModal } from '../../src/components/PaywallModal';
 
 export default function ExpensesScreen() {
   const { t } = useTranslation();
@@ -17,10 +19,16 @@ export default function ExpensesScreen() {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [showModal, setShowModal] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
 
   const { transactions, loading, addTransaction, deleteTransaction } = useTransactions('expense', year, month);
   const { categories } = useCategories('expense');
+  const { isMonthLocked } = useFreemium();
   const currency = profile?.currency ?? 'USD';
+
+  const prevMonthYear = month === 1 ? year - 1 : year;
+  const prevMonthNum = month === 1 ? 12 : month - 1;
+  const isAtFreeLimit = isMonthLocked(prevMonthYear, prevMonthNum);
 
   function prevMonth() {
     if (month === 1) { setYear(y => y - 1); setMonth(12); }
@@ -43,7 +51,7 @@ export default function ExpensesScreen() {
           <Text style={styles.addText}>{t('expenses.add_short')}</Text>
         </TouchableOpacity>
       </View>
-      <MonthNavigator year={year} month={month} onPrev={prevMonth} onNext={nextMonth} lang={profile?.language} />
+      <MonthNavigator year={year} month={month} onPrev={prevMonth} onNext={nextMonth} lang={profile?.language} isAtFreeLimit={isAtFreeLimit} onUpgradePress={() => setShowPaywall(true)} />
       <View style={styles.totalBar}>
         <Text style={styles.totalLabel}>{t('expenses.total_month')}</Text>
         <Text style={styles.totalAmount}>{currency} {total.toFixed(2)}</Text>
@@ -69,6 +77,7 @@ export default function ExpensesScreen() {
         type="expense"
         currency={currency}
       />
+      <PaywallModal visible={showPaywall} onClose={() => setShowPaywall(false)} />
     </View>
   );
 }

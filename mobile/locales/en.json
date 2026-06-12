@@ -146,6 +146,12 @@
   "premium": {
     "upgrade": "Get Premium",
     "feature_locked": "Premium Feature",
-    "unlock_message": "Upgrade to Premium to access this feature"
+    "unlock_message": "Upgrade to Premium to access this feature",
+    "title": "Unlock Premium",
+    "history_locked": "Your free plan includes only the last 3 months of history",
+    "history_benefit": "Full history with no limits",
+    "export_benefit": "Export to PDF & CSV",
+    "support_benefit": "Priority support",
+    "maybe_later": "Not now"
   }
 }
