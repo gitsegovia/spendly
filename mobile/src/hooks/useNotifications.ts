@@ -142,14 +142,17 @@ export function useNotifications() {
     async (h: number, m: number) => {
       setHour(h);
       setMinute(m);
+      await persist({ enabled, hour: h, minute: m });
+      console.log('[Notifications] time preference saved:', h, ':', m);
+      // Android uses TIME_INTERVAL (hour/minute don't affect trigger timing) and a second
+      // scheduleNotificationAsync call hangs due to WorkManager state — skip reschedule.
+      // iOS uses DAILY trigger which respects hour/minute, so reschedule there.
+      if (!enabled || Platform.OS === 'android') return;
       try {
-        if (enabled) {
-          await scheduleDaily(h, m);
-          console.log('[Notifications] rescheduled at', h, ':', m);
-        }
-        await persist({ enabled, hour: h, minute: m });
+        await scheduleDaily(h, m);
+        console.log('[Notifications] rescheduled at', h, ':', m);
       } catch (e) {
-        console.error('[Notifications] updateTime error:', e);
+        console.log('[Notifications] reschedule error:', e);
       }
     },
     [enabled, persist],
