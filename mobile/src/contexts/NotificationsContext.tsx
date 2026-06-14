@@ -85,6 +85,13 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     m: number,
   ) {
     console.log('[Notifications] syncWithDevice — enabled:', enabled, 'h:', h, 'm:', m);
+
+    // Limpia ghost jobs de sesiones anteriores (identificadores distintos a NOTIF_ID).
+    // Fire-and-forget: el Bridge puede no resolver en Android pero la op nativa ocurre.
+    console.log('[Notifications] clearing all ghost jobs');
+    fireAndForget(Notifications.cancelAllScheduledNotificationsAsync(), 'startup clearAll');
+    await new Promise((r) => setTimeout(r, 1500)); // pausa para que el SO procese la cancelación
+
     if (!enabled) {
       setScheduled(false);
       setHour(h);
@@ -93,6 +100,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       return;
     }
 
+    // Después del clearAll el job propio ya no existe, siempre reprogramar
     const onDevice = await isScheduledOnDevice();
     setHour(h);
     setMinute(m);
