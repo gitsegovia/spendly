@@ -41,14 +41,19 @@ async function scheduleDaily(hour: number, minute: number) {
   await cancelPrevious();
   console.log('[Notifications] scheduling new...');
 
-  const trigger: Notifications.DailyTriggerInput = {
-    type: Notifications.SchedulableTriggerInputTypes.DAILY,
-    hour,
-    minute,
-  };
-  if (Platform.OS === 'android') {
-    (trigger as any).channelId = CHANNEL_ID;
-  }
+  const trigger: Notifications.SchedulableNotificationTriggerInput =
+    Platform.OS === 'android'
+      ? {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          channelId: CHANNEL_ID,
+          seconds: 24 * 60 * 60,
+          repeats: true,
+        }
+      : {
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
+          hour,
+          minute,
+        };
 
   const schedulePromise = Notifications.scheduleNotificationAsync({
     content: {
