@@ -10,6 +10,9 @@ export interface Profile {
   currency: string;
   language: Language;
   onboarding_completed: boolean;
+  notification_enabled: boolean;
+  notification_hour: number;
+  notification_minute: number;
   created_at: string;
   updated_at: string;
 }

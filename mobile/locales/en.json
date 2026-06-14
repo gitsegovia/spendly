@@ -174,9 +174,13 @@
   "notifications": {
     "title": "Notifications",
     "reminder": "Daily reminder",
-    "reminder_time": "Reminder time",
+    "reminder_time": "Time",
     "reminder_body": "Did you log today's expenses?",
-    "permission_denied": "Permission denied. Enable it from system Settings."
+    "schedule_btn": "Schedule",
+    "update_btn": "Update time",
+    "active_at": "Active — daily reminder at",
+    "permission_denied": "Permission denied. Enable it from system Settings.",
+    "save_error": "Error scheduling the reminder"
   },
   "sync": {
     "syncing": "Syncing...",

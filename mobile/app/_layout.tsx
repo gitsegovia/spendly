@@ -6,6 +6,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { AuthProvider } from '../src/contexts/AuthContext';
 import { useAuth } from '../src/contexts/AuthContext';
 import { DatabaseProvider } from '../src/contexts/DatabaseContext';
+import { NotificationsProvider } from '../src/contexts/NotificationsContext';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { supabase } from '../src/lib/supabase/client';
 import '../src/lib/i18n';
@@ -73,6 +74,7 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <AuthProvider>
+        <NotificationsProvider>
         <DatabaseProvider>
           <StatusBar style="auto" />
           <AuthGate />
@@ -80,6 +82,7 @@ export default function RootLayout() {
             <Stack.Screen name="categories" options={{ animation: 'slide_from_right' }} />
           </Stack>
         </DatabaseProvider>
+        </NotificationsProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

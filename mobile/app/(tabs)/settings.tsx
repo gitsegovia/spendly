@@ -9,7 +9,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useFreemium } from '../../src/hooks/useFreemium';
-import { useNotifications } from '../../src/hooks/useNotifications';
+import { useNotificationsContext } from '../../src/contexts/NotificationsContext';
 import { AppMessage } from '../../src/components/AppMessage';
 import { PaywallModal } from '../../src/components/PaywallModal';
 import { supabase } from '../../src/lib/supabase/client';
@@ -29,8 +29,48 @@ export default function SettingsScreen() {
   const { session, profile, signOut } = useAuth();
 
   const { isPremium } = useFreemium();
-  const { enabled: notifEnabled, hour, minute, loading: notifLoading, permissionDenied, toggle: toggleNotif, updateTime } = useNotifications();
+  const {
+    scheduled, hour: savedHour, minute: savedMinute,
+    loading: notifLoading, permissionDenied, schedule, cancel,
+  } = useNotificationsContext();
+
+  // Estado local de la UI de notificaciones
+  const [localEnabled, setLocalEnabled] = useState(false);
+  const [localHour, setLocalHour] = useState(20);
+  const [localMinute, setLocalMinute] = useState(0);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [scheduling, setScheduling] = useState(false);
+
+  // Sincroniza estado local con el contexto cuando carga
+  useEffect(() => {
+    setLocalEnabled(scheduled);
+    setLocalHour(savedHour);
+    setLocalMinute(savedMinute);
+  }, [scheduled, savedHour, savedMinute]);
+
+  const pendingSave = localEnabled && (!scheduled || localHour !== savedHour || localMinute !== savedMinute);
+
+  async function handleToggleNotif(value: boolean) {
+    if (value) {
+      setLocalEnabled(true);
+    } else {
+      setLocalEnabled(false);
+      await cancel();
+    }
+  }
+
+  async function handleSchedule() {
+    setScheduling(true);
+    try {
+      await schedule(localHour, localMinute);
+    } catch (e: any) {
+      if (e?.message !== 'permission_denied') {
+        Alert.alert(t('common.error'), t('notifications.save_error'));
+      }
+    } finally {
+      setScheduling(false);
+    }
+  }
   const [currency, setCurrency] = useState(profile?.currency ?? 'USD');
   const [language, setLanguage] = useState(profile?.language ?? 'es');
   const [saving, setSaving] = useState(false);
@@ -158,41 +198,68 @@ export default function SettingsScreen() {
       {/* Notificaciones */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t('notifications.title')}</Text>
-        <View style={[styles.row, { borderBottomWidth: notifEnabled ? 1 : 0 }]}>
+
+        <View style={[styles.row, { borderBottomWidth: localEnabled ? 1 : 0 }]}>
           <Text style={styles.rowLabel}>{t('notifications.reminder')}</Text>
           {notifLoading ? (
             <ActivityIndicator size="small" color="#4F46E5" />
           ) : (
             <Switch
-              value={notifEnabled}
-              onValueChange={toggleNotif}
+              value={localEnabled}
+              onValueChange={handleToggleNotif}
               trackColor={{ false: '#E5E7EB', true: '#C7D2FE' }}
-              thumbColor={notifEnabled ? '#4F46E5' : '#9CA3AF'}
+              thumbColor={localEnabled ? '#4F46E5' : '#9CA3AF'}
             />
           )}
         </View>
-        {notifEnabled && (
-          <TouchableOpacity
-            style={[styles.row, { borderBottomWidth: 0 }]}
-            onPress={() => setShowTimePicker(true)}
-          >
-            <Text style={styles.rowLabel}>{t('notifications.reminder_time')}</Text>
-            <Text style={styles.rowValue}>
-              {String(hour).padStart(2, '0')}:{String(minute).padStart(2, '0')}
-            </Text>
-          </TouchableOpacity>
+
+        {localEnabled && (
+          <>
+            <TouchableOpacity
+              style={[styles.row, { borderBottomWidth: 0 }]}
+              onPress={() => setShowTimePicker(true)}
+            >
+              <Text style={styles.rowLabel}>{t('notifications.reminder_time')}</Text>
+              <Text style={styles.rowValue}>
+                {String(localHour).padStart(2, '0')}:{String(localMinute).padStart(2, '0')}
+              </Text>
+            </TouchableOpacity>
+
+            {showTimePicker && (
+              <DateTimePicker
+                mode="time"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                value={(() => { const d = new Date(); d.setHours(localHour, localMinute, 0, 0); return d; })()}
+                onChange={(_: DateTimePickerEvent, date?: Date) => {
+                  if (Platform.OS === 'android') setShowTimePicker(false);
+                  if (date) { setLocalHour(date.getHours()); setLocalMinute(date.getMinutes()); }
+                }}
+              />
+            )}
+
+            {pendingSave && (
+              <TouchableOpacity
+                style={[styles.scheduleBtn, scheduling && styles.saveBtnDisabled]}
+                onPress={handleSchedule}
+                disabled={scheduling}
+              >
+                {scheduling
+                  ? <ActivityIndicator color="#fff" />
+                  : <Text style={styles.scheduleBtnText}>
+                      {scheduled ? t('notifications.update_btn') : t('notifications.schedule_btn')}
+                    </Text>
+                }
+              </TouchableOpacity>
+            )}
+
+            {scheduled && !pendingSave && (
+              <Text style={styles.activeText}>
+                {t('notifications.active_at')} {String(savedHour).padStart(2, '0')}:{String(savedMinute).padStart(2, '0')}
+              </Text>
+            )}
+          </>
         )}
-        {notifEnabled && showTimePicker && (
-          <DateTimePicker
-            mode="time"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            value={(() => { const d = new Date(); d.setHours(hour, minute, 0, 0); return d; })()}
-            onChange={(_: DateTimePickerEvent, date?: Date) => {
-              if (Platform.OS === 'android') setShowTimePicker(false);
-              if (date) updateTime(date.getHours(), date.getMinutes());
-            }}
-          />
-        )}
+
         {permissionDenied && (
           <Text style={styles.permissionDenied}>{t('notifications.permission_denied')}</Text>
         )}
@@ -290,6 +357,15 @@ const styles = StyleSheet.create({
   exportBtnTextLocked: { color: '#9CA3AF' },
   exportHint: { fontSize: 12, color: '#9CA3AF', textAlign: 'center', paddingBottom: 8 },
 
+  scheduleBtn: {
+    height: 42, backgroundColor: '#4F46E5', borderRadius: 10,
+    justifyContent: 'center', alignItems: 'center', marginTop: 8, marginBottom: 8,
+  },
+  scheduleBtnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  activeText: {
+    fontSize: 12, color: '#10B981', paddingHorizontal: 4,
+    paddingBottom: 10, paddingTop: 4, fontWeight: '500',
+  },
   permissionDenied: {
     fontSize: 12, color: '#EF4444', paddingHorizontal: 4, paddingBottom: 10, lineHeight: 18,
   },
