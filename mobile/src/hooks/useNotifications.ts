@@ -56,7 +56,7 @@ async function scheduleDaily(hour: number, minute: number) {
       ? {
           type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
           channelId: CHANNEL_ID,
-          seconds: 24 * 60 * 60,
+          seconds: 60, // TEST: cambiar a 24 * 60 * 60 antes de producción
           repeats: true,
         }
       : {
