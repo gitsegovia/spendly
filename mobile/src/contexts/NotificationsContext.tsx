@@ -41,8 +41,13 @@ function buildTrigger(hour: number, minute: number): Notifications.DailyTriggerI
 
 async function isScheduledOnDevice(): Promise<boolean> {
   try {
-    const all = await Notifications.getAllScheduledNotificationsAsync();
-    console.log('[Notifications] scheduled on device:', all.map(n => n.identifier));
+    const all = await Promise.race([
+      Notifications.getAllScheduledNotificationsAsync(),
+      new Promise<Notifications.NotificationRequest[]>((resolve) =>
+        setTimeout(() => { console.log('[Notifications] getAllScheduled timeout'); resolve([]); }, 4000),
+      ),
+    ]);
+    console.log('[Notifications] scheduled on device:', all.map((n) => n.identifier));
     return all.some((n) => n.identifier === NOTIF_ID);
   } catch (e) {
     console.log('[Notifications] getAllScheduled error:', e);
@@ -79,48 +84,43 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   const [permissionDenied, setPermissionDenied] = useState(false);
   const synced = useRef(false);
 
-  async function syncWithDevice(
-    enabled: boolean,
-    h: number,
-    m: number,
-  ) {
+  async function syncWithDevice(enabled: boolean, h: number, m: number) {
     console.log('[Notifications] syncWithDevice — enabled:', enabled, 'h:', h, 'm:', m);
+    try {
+      // Limpia ghost jobs (fire-and-forget) + pausa para que el SO procese
+      console.log('[Notifications] clearing all ghost jobs');
+      fireAndForget(Notifications.cancelAllScheduledNotificationsAsync(), 'startup clearAll');
+      await new Promise((r) => setTimeout(r, 1500));
 
-    // Limpia ghost jobs de sesiones anteriores (identificadores distintos a NOTIF_ID).
-    // Fire-and-forget: el Bridge puede no resolver en Android pero la op nativa ocurre.
-    console.log('[Notifications] clearing all ghost jobs');
-    fireAndForget(Notifications.cancelAllScheduledNotificationsAsync(), 'startup clearAll');
-    await new Promise((r) => setTimeout(r, 1500)); // pausa para que el SO procese la cancelación
-
-    if (!enabled) {
-      setScheduled(false);
       setHour(h);
       setMinute(m);
-      setLoading(false);
-      return;
-    }
 
-    // Después del clearAll el job propio ya no existe, siempre reprogramar
-    const onDevice = await isScheduledOnDevice();
-    setHour(h);
-    setMinute(m);
+      if (!enabled) {
+        setScheduled(false);
+        return;
+      }
 
-    if (onDevice) {
-      console.log('[Notifications] already on device, ok');
+      // Después del clearAll nuestro job ya no existe — siempre reprogramar
+      const onDevice = await isScheduledOnDevice();
+      if (!onDevice) {
+        console.log('[Notifications] NOT on device — rescheduling');
+        fireAndForget(
+          Notifications.scheduleNotificationAsync({
+            identifier: NOTIF_ID,
+            content: { title: 'Spendly', body: i18n.t('notifications.reminder_body') },
+            trigger: buildTrigger(h, m),
+          }),
+          'startup reschedule',
+        );
+      } else {
+        console.log('[Notifications] already on device, ok');
+      }
       setScheduled(true);
-    } else {
-      console.log('[Notifications] NOT on device — rescheduling');
-      fireAndForget(
-        Notifications.scheduleNotificationAsync({
-          identifier: NOTIF_ID,
-          content: { title: 'Spendly', body: i18n.t('notifications.reminder_body') },
-          trigger: buildTrigger(h, m),
-        }),
-        'startup reschedule',
-      );
-      setScheduled(true); // optimistic
+    } catch (e) {
+      console.log('[Notifications] syncWithDevice error:', e);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   // Corre una sola vez cuando el perfil está disponible
