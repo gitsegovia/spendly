@@ -8,8 +8,7 @@ const STORAGE_KEY = 'spendly_notifications';
 const CHANNEL_ID = 'daily-reminder';
 const NOTIF_ID = 'spendly-daily-reminder'; // fixed id → segunda llamada reemplaza la primera
 
-// TEST: cambiar a 24 * 60 * 60 antes de producción
-const ANDROID_INTERVAL_SECONDS = 5 * 60;
+const ANDROID_INTERVAL_SECONDS = 24 * 60 * 60;
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
