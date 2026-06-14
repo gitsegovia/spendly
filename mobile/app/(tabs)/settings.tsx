@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, ActivityIndicator, Alert, Switch, Platform,
 } from 'react-native';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -230,10 +230,10 @@ export default function SettingsScreen() {
                 mode="time"
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                 value={(() => { const d = new Date(); d.setHours(localHour, localMinute, 0, 0); return d; })()}
-                onChange={(_: DateTimePickerEvent, date?: Date) => {
-                  if (Platform.OS === 'android') setShowTimePicker(false);
+                onValueChange={(date?: Date) => {
                   if (date) { setLocalHour(date.getHours()); setLocalMinute(date.getMinutes()); }
                 }}
+                onDismiss={() => setShowTimePicker(false)}
               />
             )}
 
