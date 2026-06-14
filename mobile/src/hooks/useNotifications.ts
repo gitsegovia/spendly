@@ -6,17 +6,17 @@ import i18n from '../lib/i18n';
 
 const STORAGE_KEY = 'spendly_notifications';
 const CHANNEL_ID = 'daily-reminder';
-const NOTIF_ID = 'spendly-daily-reminder'; // fixed id → segunda llamada reemplaza la primera
-
+// Identifier fijo: en Android el WorkManager crea el job aunque el JS Promise no resuelva.
+// Usar el mismo identifier garantiza que solo existe un job activo (el nuevo reemplaza al anterior).
+const NOTIF_ID = 'spendly-daily-reminder';
 const ANDROID_INTERVAL_SECONDS = 24 * 60 * 60;
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
     shouldShowBanner: true,
     shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
   }),
 });
 
@@ -29,53 +29,40 @@ async function setupAndroidChannel() {
   }
 }
 
-async function scheduleDaily(hour: number, minute: number) {
-  console.log('[Notifications] scheduleDaily start', { hour, minute });
-
-  const trigger: Notifications.SchedulableNotificationTriggerInput =
-    Platform.OS === 'android'
-      ? {
-          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-          channelId: CHANNEL_ID,
-          seconds: ANDROID_INTERVAL_SECONDS,
-          repeats: true,
-        }
-      : {
-          type: Notifications.SchedulableTriggerInputTypes.DAILY,
-          hour,
-          minute,
-        };
-
-  // Identifier fijo: si ya existe un job con este id, Android lo reemplaza
-  // en lugar de crear uno nuevo (que generaba deadlock en WorkManager).
-  const id = await Promise.race([
-    Notifications.scheduleNotificationAsync({
-      identifier: NOTIF_ID,
-      content: {
-        title: 'Spendly',
-        body: i18n.t('notifications.reminder_body'),
-      },
-      trigger,
-    }),
-    new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('scheduleNotificationAsync timeout after 8s')), 8000),
-    ),
-  ]);
-
-  console.log('[Notifications] scheduled, id:', id);
+// En Android la Promise puede no resolver (bug Bridge/WorkManager) pero la operación
+// nativa SÍ ocurre. Disparar y olvidar — el estado se maneja optimisticamente en JS.
+function fireAndForget(promise: Promise<unknown>, label: string) {
+  promise
+    .then(() => console.log(`[Notifications] ${label} done`))
+    .catch((e) => console.log(`[Notifications] ${label} error (native may still work):`, e));
 }
 
-async function cancelNotification() {
-  console.log('[Notifications] cancelling', NOTIF_ID);
-  try {
-    await Promise.race([
-      Notifications.cancelScheduledNotificationAsync(NOTIF_ID),
-      new Promise<void>((resolve) => setTimeout(resolve, 3000)),
-    ]);
-    console.log('[Notifications] cancel done (or timed out)');
-  } catch (e) {
-    console.log('[Notifications] cancel error (ignored):', e);
+function buildTrigger(hour: number, minute: number): Notifications.SchedulableNotificationTriggerInput {
+  if (Platform.OS === 'android') {
+    return {
+      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+      channelId: CHANNEL_ID,
+      seconds: ANDROID_INTERVAL_SECONDS,
+      repeats: true,
+    };
   }
+  return {
+    type: Notifications.SchedulableTriggerInputTypes.DAILY,
+    hour,
+    minute,
+  };
+}
+
+function scheduleDaily(hour: number, minute: number): Promise<string> {
+  console.log('[Notifications] scheduleDaily', { hour, minute });
+  return Notifications.scheduleNotificationAsync({
+    identifier: NOTIF_ID,
+    content: {
+      title: 'Spendly',
+      body: i18n.t('notifications.reminder_body'),
+    },
+    trigger: buildTrigger(hour, minute),
+  });
 }
 
 interface NotificationSettings {
@@ -90,27 +77,40 @@ export function useNotifications() {
   const [minute, setMinute] = useState(0);
   const [loading, setLoading] = useState(true);
   const [permissionDenied, setPermissionDenied] = useState(false);
-  const toggling = useRef(false); // guard contra doble disparo del Switch
+  const toggling = useRef(false);
 
   useEffect(() => {
     setupAndroidChannel();
-    AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
-      if (raw) {
-        const saved: NotificationSettings = JSON.parse(raw);
-        setEnabled(saved.enabled ?? false);
-        setHour(saved.hour ?? 20);
-        setMinute(saved.minute ?? 0);
+
+    AsyncStorage.getItem(STORAGE_KEY).then(async (raw) => {
+      const saved: NotificationSettings = raw
+        ? JSON.parse(raw)
+        : { enabled: false, hour: 20, minute: 0 };
+
+      setEnabled(saved.enabled);
+      setHour(saved.hour);
+      setMinute(saved.minute);
+
+      if (Platform.OS === 'android') {
+        // Limpia ghost jobs de sesiones previas (fire and forget — el Bridge puede no resolver)
+        console.log('[Notifications] startup: clearing ghost jobs');
+        fireAndForget(Notifications.cancelAllScheduledNotificationsAsync(), 'startup cancelAll');
+        // Pausa para que el SO procese la cancelación antes de reprogramar
+        await new Promise((r) => setTimeout(r, 1500));
+        if (saved.enabled) {
+          console.log('[Notifications] startup: rescheduling');
+          fireAndForget(scheduleDaily(saved.hour, saved.minute), 'startup schedule');
+        }
       }
+
       setLoading(false);
     });
   }, []);
 
   useEffect(() => {
-    const sub = Notifications.addNotificationReceivedListener((notification) => {
+    const sub = Notifications.addNotificationReceivedListener((n) => {
       console.log(
-        '[Notifications] RECEIVED while app open — id:',
-        notification.request.identifier,
-        '| title:', notification.request.content.title,
+        '[Notifications] RECEIVED — id:', n.request.identifier,
         '| time:', new Date().toLocaleTimeString(),
       );
     });
@@ -129,6 +129,7 @@ export function useNotifications() {
       }
       toggling.current = true;
       setPermissionDenied(false);
+
       try {
         if (value) {
           const { status } = await Notifications.requestPermissionsAsync();
@@ -137,16 +138,22 @@ export function useNotifications() {
             setPermissionDenied(true);
             return;
           }
-          await scheduleDaily(hour, minute);
-          console.log('[Notifications] scheduled daily at', hour, ':', minute);
-        } else {
-          await cancelNotification();
-          console.log('[Notifications] disabled');
         }
+
+        // Estado optimista: actualizar JS sin esperar al Bridge de Android
         setEnabled(value);
         await persist({ enabled: value, hour, minute });
+
+        if (value) {
+          fireAndForget(scheduleDaily(hour, minute), 'toggle schedule');
+        } else {
+          fireAndForget(
+            Notifications.cancelScheduledNotificationAsync(NOTIF_ID),
+            'toggle cancel',
+          );
+        }
       } catch (e) {
-        console.log('[Notifications] toggle error:', JSON.stringify(e), e);
+        console.log('[Notifications] toggle error:', e);
       } finally {
         toggling.current = false;
       }
@@ -161,12 +168,7 @@ export function useNotifications() {
       await persist({ enabled, hour: h, minute: m });
       console.log('[Notifications] time preference saved:', h, ':', m);
       if (!enabled || Platform.OS === 'android') return;
-      try {
-        await scheduleDaily(h, m);
-        console.log('[Notifications] rescheduled at', h, ':', m);
-      } catch (e) {
-        console.log('[Notifications] reschedule error:', e);
-      }
+      fireAndForget(scheduleDaily(h, m), 'updateTime reschedule');
     },
     [enabled, persist],
   );
