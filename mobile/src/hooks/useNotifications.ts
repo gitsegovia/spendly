@@ -29,11 +29,21 @@ async function setupAndroidChannel() {
 
 async function cancelPrevious() {
   const prevId = await AsyncStorage.getItem(NOTIF_ID_KEY);
-  if (prevId) {
-    console.log('[Notifications] cancelling previous id:', prevId);
-    await Notifications.cancelScheduledNotificationAsync(prevId);
-    await AsyncStorage.removeItem(NOTIF_ID_KEY);
+  if (!prevId) {
+    console.log('[Notifications] no previous id to cancel');
+    return;
   }
+  console.log('[Notifications] cancelling previous id:', prevId);
+  try {
+    await Promise.race([
+      Notifications.cancelScheduledNotificationAsync(prevId),
+      new Promise<void>((resolve) => setTimeout(resolve, 3000)),
+    ]);
+    console.log('[Notifications] cancel done (or timed out, proceeding anyway)');
+  } catch (e) {
+    console.log('[Notifications] cancel error (ignored):', e);
+  }
+  await AsyncStorage.removeItem(NOTIF_ID_KEY);
 }
 
 async function scheduleDaily(hour: number, minute: number) {
