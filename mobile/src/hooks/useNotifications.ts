@@ -9,7 +9,6 @@ const CHANNEL_ID = 'daily-reminder';
 // Identifier fijo: en Android el WorkManager crea el job aunque el JS Promise no resuelva.
 // Usar el mismo identifier garantiza que solo existe un job activo (el nuevo reemplaza al anterior).
 const NOTIF_ID = 'spendly-daily-reminder';
-const ANDROID_INTERVAL_SECONDS = 24 * 60 * 60;
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -37,13 +36,21 @@ function fireAndForget(promise: Promise<unknown>, label: string) {
     .catch((e) => console.log(`[Notifications] ${label} error (native may still work):`, e));
 }
 
+function nextOccurrence(hour: number, minute: number): Date {
+  const now = new Date();
+  const target = new Date();
+  target.setHours(hour, minute, 0, 0);
+  if (target <= now) target.setDate(target.getDate() + 1);
+  return target;
+}
+
 function buildTrigger(hour: number, minute: number): Notifications.SchedulableNotificationTriggerInput {
   if (Platform.OS === 'android') {
+    // DATE trigger: dispara en la próxima ocurrencia exacta de la hora configurada.
+    // Al ser one-shot, la app reprograma al abrirse (startup effect).
     return {
-      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-      channelId: CHANNEL_ID,
-      seconds: ANDROID_INTERVAL_SECONDS,
-      repeats: true,
+      type: Notifications.SchedulableTriggerInputTypes.DATE,
+      date: nextOccurrence(hour, minute),
     };
   }
   return {
