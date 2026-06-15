@@ -153,11 +153,17 @@ export function CategoryFormModal({
 
             <Text style={styles.label}>{t('categories_manage.preview')}</Text>
             <View style={styles.previewRow}>
-              <View style={[styles.previewDot, { backgroundColor: color }]} />
-              <Text style={styles.previewIcon}>{icon}</Text>
+              <View style={[styles.previewIconWrap, { backgroundColor: color + '18' }]}>
+                {icon ? (
+                  <Text style={styles.previewIcon}>{icon}</Text>
+                ) : (
+                  <View style={[styles.previewDot, { backgroundColor: color }]} />
+                )}
+              </View>
               <Text style={styles.previewName} numberOfLines={1}>
                 {name.trim() || t('categories_manage.name_placeholder')}
               </Text>
+              <View style={[styles.previewColorSwatch, { backgroundColor: color }]} />
             </View>
 
             <View style={{ height: 40 }} />
@@ -215,10 +221,15 @@ const styles = StyleSheet.create({
   iconEmoji: { fontSize: 24 },
 
   previewRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: '#F9FAFB', borderRadius: 12, padding: 14,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: '#F9FAFB', borderRadius: 14, padding: 14,
   },
+  previewIconWrap: {
+    width: 42, height: 42, borderRadius: 12,
+    justifyContent: 'center', alignItems: 'center', flexShrink: 0,
+  },
+  previewIcon: { fontSize: 22 },
   previewDot: { width: 14, height: 14, borderRadius: 7 },
-  previewIcon: { fontSize: 20 },
-  previewName: { fontSize: 16, fontWeight: '600', color: '#111827', flex: 1 },
+  previewName: { fontSize: 15, fontWeight: '600', color: '#111827', flex: 1 },
+  previewColorSwatch: { width: 18, height: 18, borderRadius: 9, flexShrink: 0 },
 });

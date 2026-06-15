@@ -181,6 +181,7 @@
     "expense_section": "Gastos",
     "income_section": "Ingresos",
     "default_badge": "Predeterminada",
+    "empty_section": "Sin categorías. Toca \"+ Nuevo\" para agregar.",
     "save_error": "Error al guardar",
     "delete_title": "Eliminar categoría",
     "delete_message": "Las transacciones existentes no se borrarán."

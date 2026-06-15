@@ -181,6 +181,7 @@
     "expense_section": "Expenses",
     "income_section": "Income",
     "default_badge": "Default",
+    "empty_section": "No categories. Tap \"+ New\" to add one.",
     "save_error": "Error saving",
     "delete_title": "Delete category",
     "delete_message": "Existing transactions will not be deleted."
