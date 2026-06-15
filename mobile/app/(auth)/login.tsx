@@ -1,15 +1,9 @@
 import { useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-  Platform,
-  KeyboardAvoidingView,
+  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  Alert, ActivityIndicator, Platform, KeyboardAvoidingView, ScrollView, Image,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
@@ -32,13 +26,13 @@ function generateNonce(length = 32): string {
 export default function LoginScreen() {
   const { t } = useTranslation();
   const { loading: authLoading } = useAuth();
+  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
 
   const redirectTo = Linking.createURL('auth/callback');
-  console.log('[Spendly] redirectTo:', redirectTo);
 
   async function handleEmailAuth() {
     if (!email || !password) {
@@ -77,7 +71,6 @@ export default function LoginScreen() {
       if (result.type === 'success') {
         const resultUrl = result.url;
 
-        // Implicit flow: tokens en hash fragment
         if (resultUrl.includes('#access_token=')) {
           const hash = resultUrl.split('#')[1] ?? '';
           const params: Record<string, string> = {};
@@ -93,7 +86,6 @@ export default function LoginScreen() {
           return;
         }
 
-        // PKCE flow: code en query params
         const parsed = Linking.parse(resultUrl);
         const code = parsed.queryParams?.code as string | undefined;
         if (code) {
@@ -101,7 +93,6 @@ export default function LoginScreen() {
           if (err) throw err;
         }
       }
-      // Android fallback: deep link llega a _layout.tsx → setSession
     } catch (e: any) {
       Alert.alert(t('common.error'), e.message);
     } finally {
@@ -112,7 +103,6 @@ export default function LoginScreen() {
   async function signInWithApple() {
     try {
       setLoading(true);
-      // Nonce raw se envía a Supabase; Apple recibe el SHA256 del mismo
       const rawNonce = generateNonce();
       const hashedNonce = await Crypto.digestStringAsync(
         Crypto.CryptoDigestAlgorithm.SHA256,
@@ -136,7 +126,6 @@ export default function LoginScreen() {
       });
       if (error) throw error;
     } catch (e: any) {
-      // ERR_REQUEST_CANCELED = usuario cerró el sheet, no es un error real
       if (e.code !== 'ERR_REQUEST_CANCELED') {
         Alert.alert(t('common.error'), e.message);
       }
@@ -145,7 +134,6 @@ export default function LoginScreen() {
     }
   }
 
-  // authLoading cubre el gap entre autenticación y loadProfile complete
   if (authLoading) {
     return (
       <View style={styles.loadingOverlay}>
@@ -156,169 +144,159 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={styles.outer}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.header}>
-        <Text style={styles.title}>{t('auth.welcome')}</Text>
-        <Text style={styles.subtitle}>{t('auth.subtitle')}</Text>
-      </View>
-
-      {/* Email / Contraseña */}
-      <View style={styles.form}>
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          placeholderTextColor="#9CA3AF"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder={t('auth.password')}
-          placeholderTextColor="#9CA3AF"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
-        <TouchableOpacity
-          style={[styles.button, styles.primaryButton]}
-          onPress={handleEmailAuth}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>
-              {isSignUp ? t('auth.sign_up') : t('auth.sign_in')}
-            </Text>
-          )}
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => setIsSignUp(!isSignUp)} style={styles.toggle}>
-          <Text style={styles.toggleText}>
-            {isSignUp ? t('auth.sign_in_toggle') : t('auth.sign_up_toggle')}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.divider}>
-        <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>{t('common.or')}</Text>
-        <View style={styles.dividerLine} />
-      </View>
-
-      {/* OAuth */}
-      <View style={styles.oauthButtons}>
-        <TouchableOpacity
-          style={[styles.button, styles.googleButton]}
-          onPress={() => handleOAuth('google')}
-          disabled={loading}
-        >
-          <Text style={styles.buttonText}>{t('auth.sign_in_google')}</Text>
-        </TouchableOpacity>
-
-        {Platform.OS === 'ios' && (
-          <AppleAuthentication.AppleAuthenticationButton
-            buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-            buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-            cornerRadius={12}
-            style={styles.appleButton}
-            onPress={signInWithApple}
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: insets.top + 32, paddingBottom: insets.bottom + 32 },
+        ]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Brand */}
+        <View style={styles.brand}>
+          <Image
+            source={require('../../assets/icon.png')}
+            style={styles.logo}
+            resizeMode="contain"
           />
-        )}
-      </View>
+          <Text style={styles.appName}>{t('common.app_name')}</Text>
+          <Text style={styles.subtitle}>{t('auth.subtitle')}</Text>
+        </View>
+
+        {/* Form */}
+        <View style={styles.form}>
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            placeholderTextColor="#9CA3AF"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            autoCorrect={false}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder={t('auth.password')}
+            placeholderTextColor="#9CA3AF"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+          />
+          <TouchableOpacity
+            style={[styles.btn, styles.btnPrimary, loading && styles.btnDisabled]}
+            onPress={handleEmailAuth}
+            disabled={loading}
+            activeOpacity={0.85}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.btnTextWhite}>
+                {isSignUp ? t('auth.sign_up') : t('auth.sign_in')}
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => setIsSignUp(!isSignUp)} style={styles.toggle}>
+            <Text style={styles.toggleText}>
+              {isSignUp ? t('auth.sign_in_toggle') : t('auth.sign_up_toggle')}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Divider */}
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>{t('common.or')}</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        {/* OAuth */}
+        <View style={styles.oauth}>
+          <TouchableOpacity
+            style={[styles.btn, styles.btnGoogle, loading && styles.btnDisabled]}
+            onPress={() => handleOAuth('google')}
+            disabled={loading}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.btnTextGoogle}>G</Text>
+            <Text style={styles.btnTextDark}>{t('auth.sign_in_google')}</Text>
+          </TouchableOpacity>
+
+          {Platform.OS === 'ios' && (
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+              cornerRadius={14}
+              style={styles.appleBtn}
+              onPress={signInWithApple}
+            />
+          )}
+        </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  loadingOverlay: {
-    flex: 1,
-    backgroundColor: '#fff',
-    justifyContent: 'center',
-    alignItems: 'center',
+  outer: { flex: 1, backgroundColor: '#fff' },
+  loadingOverlay: { flex: 1, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center' },
+
+  content: { paddingHorizontal: 28 },
+
+  // Brand
+  brand: { alignItems: 'center', marginBottom: 36, gap: 8 },
+  logo: {
+    width: 96, height: 96, borderRadius: 24,
+    marginBottom: 4,
+    shadowColor: '#4F46E5', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25, shadowRadius: 12, elevation: 8,
   },
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
-  },
-  header: {
-    marginBottom: 32,
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#6B7280',
-    textAlign: 'center',
-  },
-  form: {
-    gap: 12,
-    marginBottom: 24,
-  },
+  appName: { fontSize: 32, fontWeight: '800', color: '#111827', letterSpacing: -0.5 },
+  subtitle: { fontSize: 15, color: '#6B7280', textAlign: 'center' },
+
+  // Form
+  form: { gap: 12, marginBottom: 24 },
   input: {
-    height: 52,
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: '#111827',
+    height: 52, borderWidth: 1.5, borderColor: '#E5E7EB',
+    borderRadius: 14, paddingHorizontal: 16,
+    fontSize: 16, color: '#111827', backgroundColor: '#F9FAFB',
   },
-  toggle: {
-    alignItems: 'center',
-    paddingVertical: 4,
+  toggle: { alignItems: 'center', paddingVertical: 4 },
+  toggleText: { fontSize: 14, color: '#4F46E5', fontWeight: '500' },
+
+  // Divider
+  divider: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 12 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: '#E5E7EB' },
+  dividerText: { fontSize: 13, color: '#9CA3AF' },
+
+  // OAuth
+  oauth: { gap: 12 },
+
+  // Shared button
+  btn: {
+    height: 52, borderRadius: 14,
+    justifyContent: 'center', alignItems: 'center', flexDirection: 'row', gap: 8,
   },
-  toggleText: {
-    fontSize: 14,
-    color: '#4F46E5',
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
-    gap: 12,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E5E7EB',
-  },
-  dividerText: {
-    fontSize: 14,
-    color: '#9CA3AF',
-  },
-  oauthButtons: {
-    gap: 12,
-  },
-  button: {
-    height: 52,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  primaryButton: {
+  btnDisabled: { opacity: 0.6 },
+
+  btnPrimary: {
     backgroundColor: '#4F46E5',
+    shadowColor: '#4F46E5', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3, shadowRadius: 10, elevation: 6,
   },
-  googleButton: {
-    backgroundColor: '#4285F4',
+  btnTextWhite: { color: '#fff', fontSize: 16, fontWeight: '700' },
+
+  btnGoogle: {
+    backgroundColor: '#fff',
+    borderWidth: 1.5, borderColor: '#E5E7EB',
   },
-  appleButton: {
-    height: 52,
-    width: '100%',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  btnTextGoogle: { fontSize: 18, fontWeight: '800', color: '#4285F4' },
+  btnTextDark: { fontSize: 15, fontWeight: '600', color: '#111827' },
+
+  appleBtn: { height: 52, width: '100%' },
 });

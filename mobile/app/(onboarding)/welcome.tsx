@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -19,9 +19,11 @@ export default function WelcomeScreen() {
 
       {/* Hero */}
       <View style={styles.hero}>
-        <View style={styles.logoWrap}>
-          <Text style={styles.logoIcon}>💸</Text>
-        </View>
+        <Image
+          source={require('../../assets/icon.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
         <Text style={styles.appName}>{t('common.app_name')}</Text>
         <Text style={styles.tagline}>{t('onboarding.tagline')}</Text>
       </View>
@@ -67,15 +69,12 @@ const styles = StyleSheet.create({
 
   // Hero
   hero: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 10 },
-  logoWrap: {
-    width: 96, height: 96, borderRadius: 28,
-    backgroundColor: '#EEF2FF',
-    justifyContent: 'center', alignItems: 'center',
+  logo: {
+    width: 100, height: 100, borderRadius: 26,
     marginBottom: 8,
     shadowColor: '#4F46E5', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15, shadowRadius: 12, elevation: 6,
+    shadowOpacity: 0.25, shadowRadius: 12, elevation: 8,
   },
-  logoIcon: { fontSize: 48 },
   appName: { fontSize: 38, fontWeight: '800', color: '#111827', letterSpacing: -0.5 },
   tagline: { fontSize: 16, color: '#6B7280', textAlign: 'center', lineHeight: 24, maxWidth: 260 },
 

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Transparent background — Android adaptive icon foreground -->
+  <!-- Content scaled to fit safe zone (66% = ~676px, centered) -->
+
+  <!-- S lettermark (scaled down so it stays within Android safe zone) -->
+  <text
+    x="512" y="512"
+    font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
+    font-weight="900"
+    font-size="480"
+    fill="white"
+    text-anchor="middle"
+    dominant-baseline="central"
+  >S</text>
+
+  <!-- Sparkle dots (adjusted for smaller S) -->
+  <circle cx="712" cy="232" r="22" fill="white" opacity="0.90"/>
+  <circle cx="762" cy="296" r="13" fill="white" opacity="0.60"/>
+  <circle cx="740" cy="172" r="13" fill="white" opacity="0.60"/>
+</svg>

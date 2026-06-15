@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1024" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6366F1"/>
+      <stop offset="100%" stop-color="#3730A3"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background rounded square -->
+  <rect width="1024" height="1024" rx="220" fill="url(#bg)"/>
+
+  <!-- Subtle inner glow (coin depth) -->
+  <circle cx="512" cy="512" r="410" fill="rgba(255,255,255,0.05)"/>
+
+  <!-- S lettermark -->
+  <text
+    x="512" y="512"
+    font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
+    font-weight="900"
+    font-size="650"
+    fill="white"
+    text-anchor="middle"
+    dominant-baseline="central"
+  >S</text>
+
+  <!-- Sparkle dots — top right, suggesting coins / growth -->
+  <circle cx="748" cy="202" r="28" fill="white" opacity="0.90"/>
+  <circle cx="808" cy="274" r="17" fill="white" opacity="0.60"/>
+  <circle cx="776" cy="140" r="17" fill="white" opacity="0.60"/>
+</svg>
