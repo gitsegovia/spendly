@@ -215,6 +215,7 @@ function CategoryRow({ cat, total, currency, t, budget }: CategoryRowProps) {
   if (budget != null && budget > 0) {
     const over = cat.total > budget;
     const pct = Math.min((cat.total / budget) * 100, 100);
+    const pctOfTotal = total > 0 ? (cat.total / total) * 100 : 0;
     const barColor = over ? '#EF4444' : '#4F46E5';
     return (
       <View style={catStyles.wrap}>
@@ -229,9 +230,14 @@ function CategoryRow({ cat, total, currency, t, budget }: CategoryRowProps) {
               {categoryLabel(cat.category_name, t)}
             </Text>
           </View>
-          <Text style={[catStyles.detail, over && catStyles.detailOver]}>
-            {over ? `${t('budget.over_budget')} · ` : ''}{currency} {cat.total.toFixed(2)} / {currency} {budget.toFixed(2)}
-          </Text>
+          <View style={catStyles.rightCol}>
+            <Text style={[catStyles.detail, over && catStyles.detailOver]}>
+              {pctOfTotal.toFixed(0)}% · {currency} {cat.total.toFixed(2)}
+            </Text>
+            <Text style={catStyles.budgetLimit}>
+              {over ? `${t('budget.over_budget')} · ` : ''}{t('budget.of')} {currency} {budget.toFixed(2)}
+            </Text>
+          </View>
         </View>
         <View style={catStyles.bar}>
           <View style={[catStyles.fill, { width: `${pct}%` as any, backgroundColor: barColor }]} />
@@ -275,6 +281,8 @@ const catStyles = StyleSheet.create({
   name: { fontSize: 14, color: '#374151', fontWeight: '500', flex: 1 },
   detail: { fontSize: 12, color: '#9CA3AF', marginLeft: 8 },
   detailOver: { color: '#EF4444', fontWeight: '600' },
+  rightCol: { alignItems: 'flex-end', marginLeft: 8 },
+  budgetLimit: { fontSize: 10, color: '#C4B5FD', marginTop: 2 },
   bar: { height: 5, backgroundColor: '#F3F4F6', borderRadius: 3, overflow: 'hidden' },
   fill: { height: 5, borderRadius: 3 },
 });

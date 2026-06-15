@@ -130,8 +130,9 @@
     "feature_secure": "Tus datos seguros en la nube",
     "free_plan": "Gratis para siempre en el plan básico",
     "start": "Comenzar",
+    "finish": "Entrar a Spendly",
     "setup_title": "¡Casi listo!",
-    "setup_subtitle": "Configurá tu moneda e idioma"
+    "setup_subtitle": "Configurá tu moneda e idioma preferido"
   },
   "modal": {
     "new_expense": "Nuevo gasto",
