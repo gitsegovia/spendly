@@ -48,6 +48,7 @@
     "expenses_by_category": "Expenses by category",
     "no_records": "No records this month",
     "no_records_hint": "Add expenses or income from the tabs",
+    "see_all": "See all",
     "recent_transactions": "Recent transactions"
   },
   "expenses": {

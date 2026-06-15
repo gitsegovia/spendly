@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { categoryLabel } from '../lib/categoryName';
+import { formatDate } from '../lib/dateFormat';
 import { TransactionWithItems } from '../hooks/useTransactions';
 import { ConfirmModal } from './ConfirmModal';
 
@@ -10,19 +11,6 @@ interface Props {
   currency: string;
   onDelete: (id: string) => void;
   onEdit: (transaction: TransactionWithItems) => void;
-}
-
-const MONTHS: Record<string, string[]> = {
-  es: ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
-  en: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-};
-
-function formatDate(date: string, lang = 'es'): string {
-  const parts = date.split('-');
-  const m = parseInt(parts[1] ?? '1', 10);
-  const d = parseInt(parts[2] ?? '1', 10);
-  const labels = MONTHS[lang] ?? MONTHS['es'];
-  return `${d} ${labels[m - 1]}`;
 }
 
 export function TransactionCard({ transaction, currency, onDelete, onEdit }: Props) {

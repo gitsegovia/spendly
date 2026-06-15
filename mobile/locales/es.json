@@ -48,6 +48,7 @@
     "expenses_by_category": "Gastos por categoría",
     "no_records": "Sin registros este mes",
     "no_records_hint": "Agregá gastos o ingresos desde las pestañas",
+    "see_all": "Ver todos",
     "recent_transactions": "Últimas transacciones"
   },
   "expenses": {

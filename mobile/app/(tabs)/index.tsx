@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { categoryLabel } from '../../src/lib/categoryName';
+import { formatDate } from '../../src/lib/dateFormat';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useMonthlyStats, CategoryStat } from '../../src/hooks/useMonthlyStats';
 import { useRecentTransactions } from '../../src/hooks/useRecentTransactions';
@@ -23,6 +25,7 @@ const MONTH_NAMES: Record<string, string[]> = {
 export default function DashboardScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { profile } = useAuth();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
@@ -93,7 +96,11 @@ export default function DashboardScreen() {
           <View style={styles.heroCard}>
             <Text style={styles.heroMonth}>{monthName} {year}</Text>
             <Text style={styles.heroLabel}>{t('dashboard.balance')}</Text>
-            <Text style={[styles.heroBalance, { color: stats.balance >= 0 ? '#111827' : '#EF4444' }]}>
+            <Text
+              style={[styles.heroBalance, { color: stats.balance >= 0 ? '#111827' : '#EF4444' }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            >
               {stats.balance >= 0 ? '+' : '-'}{currency} {Math.abs(stats.balance).toFixed(2)}
             </Text>
 
@@ -131,7 +138,12 @@ export default function DashboardScreen() {
           {/* Expenses by category */}
           {stats.expensesByCategory.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>{t('dashboard.expenses_by_category')}</Text>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>{t('dashboard.expenses_by_category')}</Text>
+                <TouchableOpacity onPress={() => router.push('/(tabs)/expenses')}>
+                  <Text style={styles.seeAll}>{t('dashboard.see_all')} ›</Text>
+                </TouchableOpacity>
+              </View>
               {stats.expensesByCategory.slice(0, 4).map((cat) => (
                 <CategoryRow
                   key={cat.category_id}
@@ -148,7 +160,12 @@ export default function DashboardScreen() {
           {/* Recent transactions */}
           {recent.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>{t('dashboard.recent_transactions')}</Text>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>{t('dashboard.recent_transactions')}</Text>
+                <TouchableOpacity onPress={() => router.push('/(tabs)/expenses')}>
+                  <Text style={styles.seeAll}>{t('dashboard.see_all')} ›</Text>
+                </TouchableOpacity>
+              </View>
               {recent.map((tx, idx) => (
                 <View
                   key={tx.id}
@@ -156,9 +173,13 @@ export default function DashboardScreen() {
                 >
                   <View style={styles.txLeft}>
                     {tx.category_icon ? (
-                      <Text style={styles.txIcon}>{tx.category_icon}</Text>
+                      <View style={[styles.txIconWrap, { backgroundColor: (tx.category_color ?? '#6B7280') + '18' }]}>
+                        <Text style={styles.txIcon}>{tx.category_icon}</Text>
+                      </View>
                     ) : (
-                      <View style={[styles.txDot, { backgroundColor: tx.category_color }]} />
+                      <View style={[styles.txIconWrap, { backgroundColor: (tx.category_color ?? '#6B7280') + '18' }]}>
+                        <View style={[styles.txDot, { backgroundColor: tx.category_color ?? '#6B7280' }]} />
+                      </View>
                     )}
                     <View style={styles.txInfo}>
                       <Text style={styles.txCategory} numberOfLines={1}>
@@ -176,9 +197,7 @@ export default function DashboardScreen() {
                     ]}>
                       {tx.type === 'income' ? '+' : '-'}{currency} {tx.amount.toFixed(2)}
                     </Text>
-                    <Text style={styles.txDate}>
-                      {tx.date.slice(8)}/{tx.date.slice(5, 7)}
-                    </Text>
+                    <Text style={styles.txDate}>{formatDate(tx.date, lang)}</Text>
                   </View>
                 </View>
               ))}
@@ -327,7 +346,11 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
   },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 14 },
+  sectionHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14,
+  },
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: '#111827' },
+  seeAll: { fontSize: 13, color: '#4F46E5', fontWeight: '600' },
 
   // Recent transactions
   txRow: {
@@ -335,8 +358,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F9FAFB',
   },
   txLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
-  txIcon: { fontSize: 18, width: 26, textAlign: 'center' },
-  txDot: { width: 10, height: 10, borderRadius: 5, flexShrink: 0 },
+  txIconWrap: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  txIcon: { fontSize: 18 },
+  txDot: { width: 10, height: 10, borderRadius: 5 },
   txInfo: { flex: 1 },
   txCategory: { fontSize: 14, fontWeight: '600', color: '#111827' },
   txNotes: { fontSize: 12, color: '#9CA3AF', marginTop: 1 },
