@@ -139,6 +139,10 @@ export default function SettingsScreen() {
           <Text style={styles.rowLabel}>{t('settings.categories_title')}</Text>
           <Text style={styles.rowChevron}>›</Text>
         </TouchableOpacity>
+        <TouchableOpacity style={styles.row} onPress={() => router.push('/budget')}>
+          <Text style={styles.rowLabel}>{t('budget.nav_row')}</Text>
+          <Text style={styles.rowChevron}>›</Text>
+        </TouchableOpacity>
         <View style={[styles.row, { borderBottomWidth: 0 }]}>
           <Text style={styles.rowLabel}>{t('settings.plan')}</Text>
           <View style={[styles.planBadge, profile?.plan === 'premium' ? styles.planPremium : styles.planFree]}>

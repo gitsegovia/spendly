@@ -1,6 +1,7 @@
 import { Tabs, usePathname } from 'expo-router';
 import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useBudgetAlerts } from '../../src/hooks/useBudgetAlerts';
 
 function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
   return (
@@ -27,6 +28,7 @@ function CenterTabButton({ onPress }: any) {
 
 export default function TabsLayout() {
   const { t } = useTranslation();
+  useBudgetAlerts();
 
   return (
     <Tabs

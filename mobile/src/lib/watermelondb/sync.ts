@@ -55,6 +55,18 @@ function mapItem(r: any) {
   };
 }
 
+function mapBudget(r: any) {
+  return {
+    id: r.id,
+    category_id: r.category_id,
+    amount: Number(r.amount),
+    user_id: r.user_id,
+    is_deleted: r.is_deleted ?? false,
+    created_at: toMs(r.created_at),
+    updated_at: toMs(r.updated_at),
+  };
+}
+
 function bucketRecords<T extends { is_deleted: boolean; created_at: number }>(
   records: T[],
   isFirstSync: boolean,
@@ -90,7 +102,7 @@ export async function syncWithSupabase(): Promise<void> {
       const since = lastPulledAt ? toIso(lastPulledAt) : '1970-01-01T00:00:00.000Z';
       const now = Date.now();
 
-      const [catsResult, txsResult] = await Promise.all([
+      const [catsResult, txsResult, budgetsResult] = await Promise.all([
         supabase
           .from('categories')
           .select('*')
@@ -98,6 +110,11 @@ export async function syncWithSupabase(): Promise<void> {
           .gt('updated_at', since),
         supabase
           .from('transactions')
+          .select('*')
+          .eq('user_id', userId)
+          .gt('updated_at', since),
+        supabase
+          .from('budgets')
           .select('*')
           .eq('user_id', userId)
           .gt('updated_at', since),
@@ -119,16 +136,19 @@ export async function syncWithSupabase(): Promise<void> {
       if (catsResult.error) throw catsResult.error;
       if (txsResult.error) throw txsResult.error;
       if (itemsResult.error) throw itemsResult.error;
+      if (budgetsResult.error) throw budgetsResult.error;
 
       const cats = (catsResult.data ?? []).map(mapCategory);
       const txs = (txsResult.data ?? []).map(mapTransaction);
       const items = (itemsResult.data ?? []).map(mapItem);
+      const budgets = (budgetsResult.data ?? []).map(mapBudget);
 
       return {
         changes: {
           categories: bucketRecords(cats, isFirstSync, lastPulledAt ?? 0),
           transactions: bucketRecords(txs, isFirstSync, lastPulledAt ?? 0),
           transaction_items: bucketRecords(items, isFirstSync, lastPulledAt ?? 0),
+          budgets: bucketRecords(budgets, isFirstSync, lastPulledAt ?? 0),
         },
         timestamp: now,
       };
@@ -244,6 +264,37 @@ export async function syncWithSupabase(): Promise<void> {
         const { error } = await supabase.from('transaction_items')
           .update({ is_deleted: true, updated_at: now })
           .in('id', items.deleted);
+        if (error) throw error;
+      }
+
+      // --- budgets ---
+      const budgets = ch.budgets ?? { created: [], updated: [], deleted: [] };
+      if (budgets?.created?.length) {
+        const { error } = await supabase.from('budgets').insert(
+          budgets.created.map((r) => ({
+            id: r.id,
+            user_id: userId,
+            category_id: r.category_id,
+            amount: r.amount,
+            created_at: toIso(r.created_at as number),
+            updated_at: toIso(r.updated_at as number),
+          })),
+        );
+        if (error) throw error;
+      }
+      if (budgets?.updated?.length) {
+        for (const r of budgets.updated) {
+          const { error } = await supabase.from('budgets').update({
+            amount: r.amount,
+            updated_at: now,
+          }).eq('id', r.id);
+          if (error) throw error;
+        }
+      }
+      if (budgets?.deleted?.length) {
+        const { error } = await supabase.from('budgets')
+          .update({ is_deleted: true, updated_at: now })
+          .in('id', budgets.deleted);
         if (error) throw error;
       }
     },

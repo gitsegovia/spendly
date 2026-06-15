@@ -204,6 +204,25 @@
     "error": "Sync error",
     "retry": "Retry"
   },
+  "budget": {
+    "title": "Budgets",
+    "subtitle": "Monthly limit per expense category",
+    "set_limit": "Set limit",
+    "edit_limit": "Edit limit",
+    "no_limit": "No limit",
+    "amount_placeholder": "Budget amount",
+    "remove": "Remove limit",
+    "spent": "Spent",
+    "of": "of",
+    "over_budget": "Over budget",
+    "save": "Save",
+    "nav_row": "Monthly budgets",
+    "invalid_amount": "Enter a valid amount greater than 0",
+    "alert_80_title": "Budget at 80% — {{category}}",
+    "alert_80_body": "You've used 80% of your monthly limit in this category",
+    "alert_over_title": "Budget exceeded — {{category}}",
+    "alert_over_body": "You've gone over your monthly budget in this category"
+  },
   "premium": {
     "upgrade": "Get Premium",
     "title": "Unlock Premium",

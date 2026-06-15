@@ -6,6 +6,7 @@ import { categoryLabel } from '../../src/lib/categoryName';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useMonthlyStats, CategoryStat } from '../../src/hooks/useMonthlyStats';
 import { useRecentTransactions } from '../../src/hooks/useRecentTransactions';
+import { useBudgets } from '../../src/hooks/useBudgets';
 import { useFreemium } from '../../src/hooks/useFreemium';
 import { useDatabase } from '../../src/contexts/DatabaseContext';
 import { MonthNavigator } from '../../src/components/MonthNavigator';
@@ -30,6 +31,7 @@ export default function DashboardScreen() {
 
   const { stats, loading } = useMonthlyStats(year, month);
   const { transactions: recent } = useRecentTransactions(year, month);
+  const { getBudgetForCategory } = useBudgets();
   const { isMonthLocked } = useFreemium();
   const { syncStatus, sync } = useDatabase();
 
@@ -137,6 +139,7 @@ export default function DashboardScreen() {
                   total={stats.totalExpenses}
                   currency={currency}
                   t={t}
+                  budget={getBudgetForCategory(cat.category_id)}
                 />
               ))}
             </View>
@@ -202,12 +205,42 @@ interface CategoryRowProps {
   cat: CategoryStat;
   total: number;
   currency: string;
-  t: (key: string) => string;
+  t: (key: string, opts?: any) => string;
+  budget?: number | null;
 }
 
-function CategoryRow({ cat, total, currency, t }: CategoryRowProps) {
-  const pct = total > 0 ? (cat.total / total) * 100 : 0;
+function CategoryRow({ cat, total, currency, t, budget }: CategoryRowProps) {
   const color = cat.category_color || '#9CA3AF';
+
+  if (budget != null && budget > 0) {
+    const over = cat.total > budget;
+    const pct = Math.min((cat.total / budget) * 100, 100);
+    const barColor = over ? '#EF4444' : '#4F46E5';
+    return (
+      <View style={catStyles.wrap}>
+        <View style={catStyles.top}>
+          <View style={catStyles.left}>
+            {cat.category_icon ? (
+              <Text style={catStyles.icon}>{cat.category_icon}</Text>
+            ) : (
+              <View style={[catStyles.dot, { backgroundColor: color }]} />
+            )}
+            <Text style={catStyles.name} numberOfLines={1}>
+              {categoryLabel(cat.category_name, t)}
+            </Text>
+          </View>
+          <Text style={[catStyles.detail, over && catStyles.detailOver]}>
+            {over ? `${t('budget.over_budget')} · ` : ''}{currency} {cat.total.toFixed(2)} / {currency} {budget.toFixed(2)}
+          </Text>
+        </View>
+        <View style={catStyles.bar}>
+          <View style={[catStyles.fill, { width: `${pct}%` as any, backgroundColor: barColor }]} />
+        </View>
+      </View>
+    );
+  }
+
+  const pct = total > 0 ? (cat.total / total) * 100 : 0;
   return (
     <View style={catStyles.wrap}>
       <View style={catStyles.top}>
@@ -241,6 +274,7 @@ const catStyles = StyleSheet.create({
   dot: { width: 10, height: 10, borderRadius: 5 },
   name: { fontSize: 14, color: '#374151', fontWeight: '500', flex: 1 },
   detail: { fontSize: 12, color: '#9CA3AF', marginLeft: 8 },
+  detailOver: { color: '#EF4444', fontWeight: '600' },
   bar: { height: 5, backgroundColor: '#F3F4F6', borderRadius: 3, overflow: 'hidden' },
   fill: { height: 5, borderRadius: 3 },
 });

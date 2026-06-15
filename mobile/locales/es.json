@@ -204,6 +204,25 @@
     "error": "Error de sync",
     "retry": "Reintentar"
   },
+  "budget": {
+    "title": "Presupuestos",
+    "subtitle": "Límite mensual por categoría de gasto",
+    "set_limit": "Establecer límite",
+    "edit_limit": "Editar límite",
+    "no_limit": "Sin límite",
+    "amount_placeholder": "Monto del presupuesto",
+    "remove": "Quitar límite",
+    "spent": "Gastado",
+    "of": "de",
+    "over_budget": "Excedido",
+    "save": "Guardar",
+    "nav_row": "Presupuestos mensuales",
+    "invalid_amount": "Ingresá un monto válido mayor a 0",
+    "alert_80_title": "Presupuesto al 80% — {{category}}",
+    "alert_80_body": "Ya gastaste el 80% de tu límite mensual en esta categoría",
+    "alert_over_title": "Límite superado — {{category}}",
+    "alert_over_body": "Excediste tu presupuesto mensual en esta categoría"
+  },
   "premium": {
     "upgrade": "Obtener Premium",
     "title": "Desbloquea Premium",

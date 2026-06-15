@@ -2,9 +2,11 @@ import { Database } from '@nozbe/watermelondb';
 import SQLiteAdapter from '@nozbe/watermelondb/adapters/sqlite';
 import { setGenerator } from '@nozbe/watermelondb/utils/common/randomId';
 import { schema } from './schema';
+import { migrations } from './migrations';
 import Category from './models/Category';
 import Transaction from './models/Transaction';
 import TransactionItem from './models/TransactionItem';
+import Budget from './models/Budget';
 
 // UUID v4 generator compatible with Supabase UUID columns (no native crypto required)
 function uuidv4(): string {
@@ -17,6 +19,7 @@ setGenerator(uuidv4);
 
 const adapter = new SQLiteAdapter({
   schema,
+  migrations,
   onSetUpError: (error) => {
     console.error('[WDB] Database setup error:', error);
   },
@@ -24,5 +27,5 @@ const adapter = new SQLiteAdapter({
 
 export const database = new Database({
   adapter,
-  modelClasses: [Category, Transaction, TransactionItem],
+  modelClasses: [Category, Transaction, TransactionItem, Budget],
 });
