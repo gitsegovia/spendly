@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useFreemium } from '../../src/hooks/useFreemium';
 import { useNotificationsContext } from '../../src/contexts/NotificationsContext';
+import { useBiometric } from '../../src/contexts/BiometricContext';
 import { AppMessage } from '../../src/components/AppMessage';
 import { PaywallModal } from '../../src/components/PaywallModal';
 import { supabase } from '../../src/lib/supabase/client';
@@ -29,6 +30,7 @@ export default function SettingsScreen() {
   const { session, profile, signOut } = useAuth();
 
   const { isPremium } = useFreemium();
+  const { biometricEnabled, biometricAvailable, setBiometricEnabled } = useBiometric();
   const {
     scheduled, hour: savedHour, minute: savedMinute,
     loading: notifLoading, permissionDenied, schedule, cancel,
@@ -119,9 +121,10 @@ export default function SettingsScreen() {
   const changed = profile?.currency !== currency || profile?.language !== language;
 
   return (
+    <View style={[styles.outerContainer, { paddingTop: insets.top }]}>
     <ScrollView
       style={styles.container}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
+      contentContainerStyle={styles.content}
     >
       <Text style={styles.screenTitle}>{t('settings.title')}</Text>
 
@@ -265,6 +268,22 @@ export default function SettingsScreen() {
         )}
       </View>
 
+      {/* Seguridad */}
+      {biometricAvailable && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('settings.security')}</Text>
+          <View style={[styles.row, { borderBottomWidth: 0 }]}>
+            <Text style={styles.rowLabel}>{t('settings.biometric_lock')}</Text>
+            <Switch
+              value={biometricEnabled}
+              onValueChange={setBiometricEnabled}
+              trackColor={{ false: '#E5E7EB', true: '#C7D2FE' }}
+              thumbColor={biometricEnabled ? '#4F46E5' : '#9CA3AF'}
+            />
+          </View>
+        </View>
+      )}
+
       {/* Exportar */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t('settings.export_title')}</Text>
@@ -295,12 +314,14 @@ export default function SettingsScreen() {
       <View style={{ height: 24 }} />
       <PaywallModal visible={showPaywall} onClose={() => setShowPaywall(false)} />
     </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
-  content: { paddingHorizontal: 20, paddingBottom: 20 },
+  outerContainer: { flex: 1, backgroundColor: '#F9FAFB' },
+  container: { flex: 1 },
+  content: { paddingHorizontal: 20, paddingBottom: 20, paddingTop: 12 },
   screenTitle: { fontSize: 24, fontWeight: '700', color: '#111827', marginBottom: 16 },
 
   section: {

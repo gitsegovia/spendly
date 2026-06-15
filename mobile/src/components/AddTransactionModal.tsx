@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   Modal, ScrollView, KeyboardAvoidingView, Platform,
@@ -13,6 +13,15 @@ import { AppMessage } from './AppMessage';
 
 interface Item { name: string; amount: string; quantity: string; }
 
+interface InitialValues {
+  id: string;
+  categoryId: string;
+  amount: number;
+  date: string;
+  notes: string;
+  items: { name: string; amount: number; quantity: number }[];
+}
+
 interface Props {
   visible: boolean;
   onClose: () => void;
@@ -23,6 +32,15 @@ interface Props {
     notes: string,
     items: { name: string; amount: number; quantity: number }[]
   ) => Promise<void>;
+  onUpdate?: (
+    id: string,
+    categoryId: string,
+    amount: number,
+    date: string,
+    notes: string,
+    items: { name: string; amount: number; quantity: number }[]
+  ) => Promise<void>;
+  initialValues?: InitialValues;
   categories: Category[];
   type: TransactionType;
   currency: string;
@@ -41,8 +59,10 @@ function formatDate(d: Date): string {
   return d.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-export function AddTransactionModal({ visible, onClose, onSave, categories, type, currency }: Props) {
+export function AddTransactionModal({ visible, onClose, onSave, onUpdate, initialValues, categories, type, currency }: Props) {
   const { t } = useTranslation();
+  const isEditing = !!initialValues;
+
   const [categoryId, setCategoryId] = useState('');
   const [amount, setAmount] = useState('');
   const [notes, setNotes] = useState('');
@@ -52,6 +72,26 @@ export function AddTransactionModal({ visible, onClose, onSave, categories, type
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  // Pre-llena el formulario cuando se abre en modo edición
+  useEffect(() => {
+    if (visible && initialValues) {
+      setCategoryId(initialValues.categoryId);
+      setAmount(String(initialValues.amount));
+      setNotes(initialValues.notes ?? '');
+      const d = new Date(initialValues.date + 'T12:00:00');
+      setSelectedDate(d);
+      setDate(initialValues.date);
+      setItems(initialValues.items.map((i) => ({
+        name: i.name,
+        amount: String(i.amount),
+        quantity: String(i.quantity),
+      })));
+      setErrorMsg('');
+    } else if (visible && !initialValues) {
+      reset();
+    }
+  }, [visible, initialValues?.id]);
 
   // Cálculo en tiempo real para el indicador de artículos
   const parsedTotal = parseFloat(amount) || 0;
@@ -126,7 +166,11 @@ export function AddTransactionModal({ visible, onClose, onSave, categories, type
     try {
       setLoading(true);
       setErrorMsg('');
-      await onSave(categoryId, parsedAmount, date, notes, parsedItems);
+      if (isEditing && onUpdate && initialValues) {
+        await onUpdate(initialValues.id, categoryId, parsedAmount, date, notes, parsedItems);
+      } else {
+        await onSave(categoryId, parsedAmount, date, notes, parsedItems);
+      }
       reset();
       onClose();
     } catch (e: any) {
@@ -144,7 +188,11 @@ export function AddTransactionModal({ visible, onClose, onSave, categories, type
           <TouchableOpacity onPress={() => { reset(); onClose(); }}>
             <Text style={styles.cancel}>{t('common.cancel')}</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>{type === 'expense' ? t('modal.new_expense') : t('modal.new_income')}</Text>
+          <Text style={styles.title}>
+            {isEditing
+              ? t('common.edit')
+              : type === 'expense' ? t('modal.new_expense') : t('modal.new_income')}
+          </Text>
           <TouchableOpacity onPress={handleSave} disabled={loading}>
             <Text style={[styles.save, loading && styles.disabled]}>{t('common.save')}</Text>
           </TouchableOpacity>

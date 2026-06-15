@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { categoryLabel } from '../../src/lib/categoryName';
@@ -10,6 +10,8 @@ import { useDatabase } from '../../src/contexts/DatabaseContext';
 import { MonthNavigator } from '../../src/components/MonthNavigator';
 import { PaywallModal } from '../../src/components/PaywallModal';
 import { SyncIndicator } from '../../src/components/SyncIndicator';
+import { DashboardSkeleton } from '../../src/components/SkeletonLoader';
+import { EmptyState } from '../../src/components/EmptyState';
 
 export default function DashboardScreen() {
   const { t } = useTranslation();
@@ -62,7 +64,7 @@ export default function DashboardScreen() {
       <MonthNavigator year={year} month={month} onPrev={prevMonth} onNext={nextMonth} lang={profile?.language} isAtFreeLimit={isAtFreeLimit} onUpgradePress={() => setShowPaywall(true)} />
 
       {loading ? (
-        <ActivityIndicator style={{ marginTop: 40 }} color="#4F46E5" />
+        <DashboardSkeleton />
       ) : (
         <>
           {/* Balance */}
@@ -109,10 +111,11 @@ export default function DashboardScreen() {
           )}
 
           {stats.totalExpenses === 0 && stats.totalIncome === 0 && (
-            <View style={styles.empty}>
-              <Text style={styles.emptyText}>{t('dashboard.no_records')}</Text>
-              <Text style={styles.emptyHint}>{t('dashboard.no_records_hint')}</Text>
-            </View>
+            <EmptyState
+              icon="📊"
+              title={t('dashboard.no_records')}
+              hint={t('dashboard.no_records_hint')}
+            />
           )}
         </>
       )}
@@ -150,7 +153,4 @@ const styles = StyleSheet.create({
   catName: { flex: 1, fontSize: 14, color: '#374151' },
   catAmount: { fontSize: 14, fontWeight: '600', color: '#111827' },
   catPct: { fontSize: 12, color: '#9CA3AF', width: 36, textAlign: 'right' },
-  empty: { alignItems: 'center', paddingTop: 40 },
-  emptyText: { fontSize: 16, color: '#6B7280', fontWeight: '600' },
-  emptyHint: { fontSize: 13, color: '#9CA3AF', marginTop: 6 },
 });

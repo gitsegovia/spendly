@@ -9,9 +9,10 @@ interface Props {
   transaction: TransactionWithItems;
   currency: string;
   onDelete: (id: string) => void;
+  onEdit: (transaction: TransactionWithItems) => void;
 }
 
-export function TransactionCard({ transaction, currency, onDelete }: Props) {
+export function TransactionCard({ transaction, currency, onDelete, onEdit }: Props) {
   const { t } = useTranslation();
   const [showConfirm, setShowConfirm] = useState(false);
   const hasItems = transaction.items.length > 0;
@@ -27,7 +28,7 @@ export function TransactionCard({ transaction, currency, onDelete }: Props) {
         onConfirm={() => { setShowConfirm(false); onDelete(transaction.id); }}
         onCancel={() => setShowConfirm(false)}
       />
-    <TouchableOpacity onLongPress={() => setShowConfirm(true)} style={styles.card}>
+    <TouchableOpacity onPress={() => onEdit(transaction)} onLongPress={() => setShowConfirm(true)} style={styles.card}>
       <View style={[styles.dot, { backgroundColor: transaction.category_color ?? '#6B7280' }]} />
       <View style={styles.info}>
         <Text style={styles.category}>{categoryLabel(transaction.category_name, t)}</Text>

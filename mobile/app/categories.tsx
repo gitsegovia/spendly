@@ -130,20 +130,22 @@ function CategorySection({ title, categories, accentColor, onAdd, onEdit, onDele
       {categories.map((cat) => (
         <View key={cat.id} style={styles.row}>
           <View style={[styles.dot, { backgroundColor: cat.color }]} />
-          <Text style={styles.iconText}>{cat.icon}</Text>
+          {cat.icon ? <Text style={styles.iconText}>{cat.icon}</Text> : null}
           <Text style={styles.catName} numberOfLines={1}>{cat.name}</Text>
-          {cat.is_default ? (
-            <Text style={styles.defaultBadge}>{t('categories_manage.default_badge')}</Text>
-          ) : (
-            <View style={styles.actions}>
-              <TouchableOpacity onPress={() => onEdit(cat)} style={styles.actionBtn}>
-                <Text style={styles.editIcon}>✎</Text>
-              </TouchableOpacity>
+          <View style={styles.actions}>
+            <TouchableOpacity onPress={() => onEdit(cat)} style={styles.actionBtn}>
+              <Text style={styles.editIcon}>✏️</Text>
+            </TouchableOpacity>
+            {cat.is_default ? (
+              <View style={styles.actionBtn}>
+                <Text style={styles.lockIcon}>🔒</Text>
+              </View>
+            ) : (
               <TouchableOpacity onPress={() => onDelete(cat)} style={styles.actionBtn}>
                 <Text style={styles.deleteIcon}>🗑</Text>
               </TouchableOpacity>
-            </View>
-          )}
+            )}
+          </View>
         </View>
       ))}
     </View>
@@ -191,12 +193,9 @@ const styles = StyleSheet.create({
   iconText: { fontSize: 18, width: 26, textAlign: 'center' },
   catName: { flex: 1, fontSize: 15, color: '#111827' },
 
-  defaultBadge: {
-    fontSize: 11, color: '#9CA3AF', fontWeight: '500',
-    backgroundColor: '#F3F4F6', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10,
-  },
   actions: { flexDirection: 'row', gap: 4 },
   actionBtn: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
   editIcon: { fontSize: 17, color: '#6B7280' },
   deleteIcon: { fontSize: 16 },
+  lockIcon: { fontSize: 14, opacity: 0.4 },
 });

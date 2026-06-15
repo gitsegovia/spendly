@@ -6,6 +6,7 @@ import TransactionItemModel from '../lib/watermelondb/models/TransactionItem';
 import CategoryModel from '../lib/watermelondb/models/Category';
 import { Transaction, TransactionItem, TransactionType } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { useFreemium } from './useFreemium';
 
 export interface TransactionWithItems extends Transaction {
   items: TransactionItem[];
@@ -16,13 +17,21 @@ export interface TransactionWithItems extends Transaction {
 
 export function useTransactions(type: TransactionType, year: number, month: number) {
   const { user } = useAuth();
+  const { isMonthLocked } = useFreemium();
   const [transactions, setTransactions] = useState<TransactionWithItems[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const locked = isMonthLocked(year, month);
   const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
   const endDate = new Date(year, month, 0).toISOString().split('T')[0];
 
   useEffect(() => {
+    if (locked) {
+      setTransactions([]);
+      setLoading(false);
+      return;
+    }
+
     const subscription = database.collections
       .get<TransactionModel>('transactions')
       .query(
@@ -94,7 +103,7 @@ export function useTransactions(type: TransactionType, year: number, month: numb
       });
 
     return () => subscription.unsubscribe();
-  }, [type, startDate, endDate]);
+  }, [type, startDate, endDate, locked]);
 
   const addTransaction = useCallback(
     async (
@@ -157,5 +166,55 @@ export function useTransactions(type: TransactionType, year: number, month: numb
     });
   }, []);
 
-  return { transactions, loading, addTransaction, deleteTransaction, refresh: () => {} };
+  const updateTransaction = useCallback(
+    async (
+      id: string,
+      categoryId: string,
+      amount: number,
+      date: string,
+      notes: string,
+      items: { name: string; amount: number; quantity: number }[],
+    ) => {
+      const now = Date.now();
+      await database.write(async () => {
+        const txCollection = database.collections.get<TransactionModel>('transactions');
+        const itemCollection = database.collections.get<TransactionItemModel>('transaction_items');
+
+        const tx = await txCollection.find(id);
+        await tx.update((record) => {
+          Object.assign(record._raw, {
+            category_id: categoryId,
+            amount,
+            date,
+            notes: notes ?? '',
+            updated_at: now,
+          });
+        });
+
+        // Eliminar items anteriores
+        const oldItems = await itemCollection
+          .query(Q.where('transaction_id', id), Q.where('is_deleted', false))
+          .fetch();
+        await Promise.all(oldItems.map((i) => i.markAsDeleted()));
+
+        // Crear los nuevos items
+        for (const item of items) {
+          await itemCollection.create((record) => {
+            Object.assign(record._raw, {
+              transaction_id: id,
+              name: item.name,
+              amount: item.amount,
+              quantity: item.quantity,
+              is_deleted: false,
+              created_at: now,
+              updated_at: now,
+            });
+          });
+        }
+      });
+    },
+    [],
+  );
+
+  return { transactions, loading, addTransaction, updateTransaction, deleteTransaction, refresh: () => {} };
 }

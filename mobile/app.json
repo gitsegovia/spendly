@@ -45,6 +45,12 @@
       "@react-native-community/datetimepicker",
       "expo-sharing",
       [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Spendly uses Face ID to protect your financial data."
+        }
+      ],
+      [
         "expo-notifications",
         {
           "iosDeploymentTarget": "15.1"

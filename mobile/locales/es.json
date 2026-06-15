@@ -13,7 +13,10 @@
     "retry": "Reintentar",
     "or": "o",
     "connection_error": "No se pudo conectar al servidor",
-    "connection_error_hint": "Verificá tu conexión a internet"
+    "connection_error_hint": "Verificá tu conexión a internet",
+    "search": "Buscar...",
+    "all": "Todos",
+    "no_results": "Sin resultados"
   },
   "auth": {
     "sign_in": "Iniciar sesión",
@@ -52,7 +55,9 @@
     "add_short": "+ Agregar",
     "no_expenses": "Sin gastos registrados",
     "no_month": "Sin gastos este mes",
+    "no_month_hint": "Tocá + Agregar para registrar tu primer gasto del mes",
     "total_month": "Total del mes",
+    "total_filtered": "Total filtrado",
     "amount": "Monto",
     "category": "Categoría",
     "notes": "Notas",
@@ -64,7 +69,9 @@
     "add_short": "+ Agregar",
     "no_income": "Sin ingresos registrados",
     "no_month": "Sin ingresos este mes",
+    "no_month_hint": "Tocá + Agregar para registrar tu primer ingreso del mes",
     "total_month": "Total del mes",
+    "total_filtered": "Total filtrado",
     "fixed": "Fijo",
     "variable": "Variable"
   },
@@ -105,6 +112,8 @@
     "subscription": "Suscripción",
     "privacy": "Política de privacidad",
     "terms": "Términos de uso",
+    "security": "Seguridad",
+    "biometric_lock": "Bloqueo biométrico",
     "export_title": "Exportar datos",
     "export_csv": "Exportar CSV",
     "export_csv_hint": "Descargá todas tus transacciones en formato CSV",
@@ -181,6 +190,10 @@
     "active_at": "Activo — recordatorio diario a las",
     "permission_denied": "Permiso denegado. Activalo desde los Ajustes del sistema.",
     "save_error": "Error al programar el recordatorio"
+  },
+  "biometric": {
+    "locked": "Verificá tu identidad para continuar",
+    "unlock": "Desbloquear"
   },
   "sync": {
     "syncing": "Sincronizando...",

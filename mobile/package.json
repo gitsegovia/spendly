@@ -17,6 +17,7 @@
     "expo-device": "~56.0.4",
     "expo-file-system": "~56.0.8",
     "expo-linking": "~56.0.13",
+    "expo-local-authentication": "~56.0.4",
     "expo-localization": "~56.0.6",
     "expo-notifications": "~56.0.17",
     "expo-router": "~56.2.9",

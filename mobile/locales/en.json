@@ -13,7 +13,10 @@
     "retry": "Retry",
     "or": "or",
     "connection_error": "Could not connect to the server",
-    "connection_error_hint": "Check your internet connection"
+    "connection_error_hint": "Check your internet connection",
+    "search": "Search...",
+    "all": "All",
+    "no_results": "No results found"
   },
   "auth": {
     "sign_in": "Sign in",
@@ -52,7 +55,9 @@
     "add_short": "+ Add",
     "no_expenses": "No expenses recorded",
     "no_month": "No expenses this month",
+    "no_month_hint": "Tap + Add to record your first expense this month",
     "total_month": "Month total",
+    "total_filtered": "Filtered total",
     "amount": "Amount",
     "category": "Category",
     "notes": "Notes",
@@ -64,7 +69,9 @@
     "add_short": "+ Add",
     "no_income": "No income recorded",
     "no_month": "No income this month",
+    "no_month_hint": "Tap + Add to record your first income this month",
     "total_month": "Month total",
+    "total_filtered": "Filtered total",
     "fixed": "Fixed",
     "variable": "Variable"
   },
@@ -105,6 +112,8 @@
     "subscription": "Subscription",
     "privacy": "Privacy policy",
     "terms": "Terms of use",
+    "security": "Security",
+    "biometric_lock": "Biometric lock",
     "export_title": "Export data",
     "export_csv": "Export CSV",
     "export_csv_hint": "Download all your transactions as a CSV file",
@@ -181,6 +190,10 @@
     "active_at": "Active — daily reminder at",
     "permission_denied": "Permission denied. Enable it from system Settings.",
     "save_error": "Error scheduling the reminder"
+  },
+  "biometric": {
+    "locked": "Verify your identity to continue",
+    "unlock": "Unlock"
   },
   "sync": {
     "syncing": "Syncing...",
