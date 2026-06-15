@@ -12,10 +12,26 @@ interface Props {
   onEdit: (transaction: TransactionWithItems) => void;
 }
 
+const MONTHS: Record<string, string[]> = {
+  es: ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
+  en: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+};
+
+function formatDate(date: string, lang = 'es'): string {
+  const parts = date.split('-');
+  const m = parseInt(parts[1] ?? '1', 10);
+  const d = parseInt(parts[2] ?? '1', 10);
+  const labels = MONTHS[lang] ?? MONTHS['es'];
+  return `${d} ${labels[m - 1]}`;
+}
+
 export function TransactionCard({ transaction, currency, onDelete, onEdit }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [showConfirm, setShowConfirm] = useState(false);
   const hasItems = transaction.items.length > 0;
+  const isExpense = transaction.type === 'expense';
+  const amountColor = isExpense ? '#EF4444' : '#10B981';
+  const amountPrefix = isExpense ? '-' : '+';
 
   return (
     <>
@@ -28,24 +44,49 @@ export function TransactionCard({ transaction, currency, onDelete, onEdit }: Pro
         onConfirm={() => { setShowConfirm(false); onDelete(transaction.id); }}
         onCancel={() => setShowConfirm(false)}
       />
-    <TouchableOpacity onPress={() => onEdit(transaction)} onLongPress={() => setShowConfirm(true)} style={styles.card}>
-      <View style={[styles.dot, { backgroundColor: transaction.category_color ?? '#6B7280' }]} />
-      <View style={styles.info}>
-        <Text style={styles.category}>{categoryLabel(transaction.category_name, t)}</Text>
-        {transaction.notes ? <Text style={styles.notes}>{transaction.notes}</Text> : null}
-        {hasItems && (
-          <Text style={styles.items}>
-            {t('transaction.items_count', { count: transaction.items.length })}
-          </Text>
+      <TouchableOpacity
+        onPress={() => onEdit(transaction)}
+        onLongPress={() => setShowConfirm(true)}
+        style={styles.card}
+        activeOpacity={0.75}
+      >
+        {/* Category icon or colored dot */}
+        {transaction.category_icon ? (
+          <View style={[styles.iconWrap, { backgroundColor: (transaction.category_color ?? '#6B7280') + '18' }]}>
+            <Text style={styles.icon}>{transaction.category_icon}</Text>
+          </View>
+        ) : (
+          <View style={[styles.dotWrap, { backgroundColor: (transaction.category_color ?? '#6B7280') + '18' }]}>
+            <View style={[styles.dot, { backgroundColor: transaction.category_color ?? '#6B7280' }]} />
+          </View>
         )}
-      </View>
-      <View style={styles.right}>
-        <Text style={styles.amount}>
-          {currency} {Number(transaction.amount).toFixed(2)}
-        </Text>
-        <Text style={styles.date}>{transaction.date}</Text>
-      </View>
-    </TouchableOpacity>
+
+        {/* Info */}
+        <View style={styles.info}>
+          <Text style={styles.category} numberOfLines={1}>
+            {categoryLabel(transaction.category_name ?? '', t)}
+          </Text>
+          {transaction.notes ? (
+            <Text style={styles.notes} numberOfLines={1}>{transaction.notes}</Text>
+          ) : null}
+          {hasItems && (
+            <Text style={styles.items}>
+              {t('transaction.items_count', { count: transaction.items.length })}
+            </Text>
+          )}
+        </View>
+
+        {/* Amount + date */}
+        <View style={styles.right}>
+          <Text style={[styles.amount, { color: amountColor }]}>
+            {amountPrefix}{currency} {Number(transaction.amount).toFixed(2)}
+          </Text>
+          <Text style={styles.date}>{formatDate(transaction.date, i18n.language)}</Text>
+        </View>
+
+        {/* Edit chevron */}
+        <Text style={styles.chevron}>›</Text>
+      </TouchableOpacity>
     </>
   );
 }
@@ -55,15 +96,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 14,
+    padding: 14,
     marginBottom: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
-    gap: 12,
+    gap: 10,
+  },
+  iconWrap: {
+    width: 42, height: 42, borderRadius: 12,
+    justifyContent: 'center', alignItems: 'center', flexShrink: 0,
+  },
+  icon: { fontSize: 20 },
+  dotWrap: {
+    width: 42, height: 42, borderRadius: 12,
+    justifyContent: 'center', alignItems: 'center', flexShrink: 0,
   },
   dot: { width: 12, height: 12, borderRadius: 6 },
   info: { flex: 1 },
@@ -71,6 +121,7 @@ const styles = StyleSheet.create({
   notes: { fontSize: 13, color: '#6B7280', marginTop: 2 },
   items: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
   right: { alignItems: 'flex-end' },
-  amount: { fontSize: 15, fontWeight: '700', color: '#111827' },
+  amount: { fontSize: 15, fontWeight: '700' },
   date: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
+  chevron: { fontSize: 20, color: '#D1D5DB', marginLeft: 2 },
 });
