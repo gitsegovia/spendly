@@ -52,30 +52,51 @@ export function TransactionSkeleton() {
 export function DashboardSkeleton() {
   return (
     <>
-      {/* Balance card */}
-      <View style={styles.balanceCard}>
-        <SkeletonLoader width={80} height={13} style={{ marginBottom: 10 }} />
-        <SkeletonLoader width={140} height={36} borderRadius={8} />
-      </View>
-      {/* Summary row */}
-      <View style={styles.row}>
-        <View style={[styles.summaryCard, { backgroundColor: '#F0FDF4' }]}>
-          <SkeletonLoader width="60%" height={12} style={{ marginBottom: 8 }} />
-          <SkeletonLoader width="80%" height={20} />
+      {/* Hero card */}
+      <View style={styles.heroCard}>
+        <SkeletonLoader width={80} height={11} borderRadius={6} style={{ marginBottom: 6 }} />
+        <SkeletonLoader width={60} height={13} borderRadius={6} style={{ marginBottom: 6 }} />
+        <SkeletonLoader width={160} height={40} borderRadius={8} style={{ marginBottom: 20 }} />
+        <View style={styles.heroPills}>
+          <View style={styles.heroPill}>
+            <SkeletonLoader width="70%" height={11} style={{ marginBottom: 6 }} />
+            <SkeletonLoader width="90%" height={15} />
+          </View>
+          <View style={{ width: 1 }} />
+          <View style={styles.heroPill}>
+            <SkeletonLoader width="70%" height={11} style={{ marginBottom: 6 }} />
+            <SkeletonLoader width="90%" height={15} />
+          </View>
         </View>
-        <View style={[styles.summaryCard, { backgroundColor: '#FFF1F2' }]}>
-          <SkeletonLoader width="60%" height={12} style={{ marginBottom: 8 }} />
-          <SkeletonLoader width="80%" height={20} />
-        </View>
       </View>
-      {/* Category rows */}
+      {/* Category section */}
       <View style={styles.section}>
+        <SkeletonLoader width="50%" height={14} style={{ marginBottom: 14 }} />
         {[1, 2, 3].map((i) => (
-          <View key={i} style={styles.catRow}>
+          <View key={i} style={{ marginBottom: 14 }}>
+            <View style={styles.catRow}>
+              <SkeletonLoader width={10} height={10} borderRadius={5} />
+              <SkeletonLoader width="40%" height={13} />
+              <SkeletonLoader width={72} height={12} />
+            </View>
+            <SkeletonLoader width="100%" height={5} borderRadius={3} style={{ marginTop: 5 }} />
+          </View>
+        ))}
+      </View>
+      {/* Recent transactions section */}
+      <View style={styles.section}>
+        <SkeletonLoader width="55%" height={14} style={{ marginBottom: 14 }} />
+        {[1, 2, 3, 4].map((i) => (
+          <View key={i} style={[styles.catRow, { paddingVertical: 10 }]}>
             <SkeletonLoader width={10} height={10} borderRadius={5} />
-            <SkeletonLoader width="45%" height={13} />
-            <SkeletonLoader width={60} height={13} />
-            <SkeletonLoader width={28} height={11} />
+            <View style={{ flex: 1, gap: 5 }}>
+              <SkeletonLoader width="45%" height={13} />
+              <SkeletonLoader width="30%" height={11} />
+            </View>
+            <View style={{ alignItems: 'flex-end', gap: 5 }}>
+              <SkeletonLoader width={72} height={13} />
+              <SkeletonLoader width={36} height={11} />
+            </View>
           </View>
         ))}
       </View>
@@ -94,14 +115,17 @@ const styles = StyleSheet.create({
   },
   info: { flex: 1, gap: 0 },
   right: { alignItems: 'flex-end' },
-  balanceCard: {
-    backgroundColor: '#fff', borderRadius: 16, padding: 24,
-    alignItems: 'center', marginVertical: 12,
+  heroCard: {
+    backgroundColor: '#fff', borderRadius: 20, padding: 20,
+    alignItems: 'center', marginTop: 12,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06, shadowRadius: 8, elevation: 3,
+    shadowOpacity: 0.07, shadowRadius: 10, elevation: 4,
   },
-  row: { flexDirection: 'row', gap: 12, marginBottom: 12 },
-  summaryCard: { flex: 1, borderRadius: 12, padding: 16 },
-  section: { backgroundColor: '#fff', borderRadius: 12, padding: 16, marginTop: 4, gap: 16 },
+  heroPills: {
+    flexDirection: 'row', width: '100%',
+    backgroundColor: '#F9FAFB', borderRadius: 14, padding: 14,
+  },
+  heroPill: { flex: 1, alignItems: 'center', gap: 0 },
+  section: { backgroundColor: '#fff', borderRadius: 14, padding: 16, marginTop: 12 },
   catRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
 });

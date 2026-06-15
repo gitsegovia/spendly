@@ -47,7 +47,8 @@
     "month_summary": "Resumen del mes",
     "expenses_by_category": "Gastos por categoría",
     "no_records": "Sin registros este mes",
-    "no_records_hint": "Agregá gastos o ingresos desde las pestañas"
+    "no_records_hint": "Agregá gastos o ingresos desde las pestañas",
+    "recent_transactions": "Últimas transacciones"
   },
   "expenses": {
     "title": "Gastos",
