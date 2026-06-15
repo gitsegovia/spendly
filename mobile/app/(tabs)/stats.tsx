@@ -13,6 +13,11 @@ import { MonthNavigator } from '../../src/components/MonthNavigator';
 import { PaywallModal } from '../../src/components/PaywallModal';
 import { EmptyState } from '../../src/components/EmptyState';
 
+const MONTH_NAMES: Record<string, string[]> = {
+  es: ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'],
+  en: ['January','February','March','April','May','June','July','August','September','October','November','December'],
+};
+
 export default function StatsScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
@@ -29,6 +34,8 @@ export default function StatsScreen() {
   const { syncStatus, sync } = useDatabase();
 
   const currency = profile?.currency ?? 'USD';
+  const lang = profile?.language ?? 'es';
+  const monthName = (MONTH_NAMES[lang] ?? MONTH_NAMES['es']!)[month - 1];
   const prevMonthYear = month === 1 ? year - 1 : year;
   const prevMonthNum = month === 1 ? 12 : month - 1;
   const isAtFreeLimit = isMonthLocked(prevMonthYear, prevMonthNum);
@@ -44,7 +51,7 @@ export default function StatsScreen() {
     else setMonth(m => m + 1);
   }
 
-  const balanceColor = stats.balance >= 0 ? '#10B981' : '#EF4444';
+  const balanceColor = stats.balance >= 0 ? '#111827' : '#EF4444';
   const savingsRate = stats.totalIncome > 0
     ? ((stats.totalIncome - stats.totalExpenses) / stats.totalIncome) * 100
     : 0;
@@ -108,50 +115,45 @@ export default function StatsScreen() {
         <ActivityIndicator style={{ marginTop: 32 }} color="#4F46E5" />
       ) : (
         <>
-          {/* Hero balance card */}
+          {/* Hero balance card — igual al home */}
           <View style={styles.heroCard}>
+            <Text style={styles.heroMonth}>{monthName} {year}</Text>
             <Text style={styles.heroLabel}>{t('stats.balance_month')}</Text>
             <Text
-              style={[styles.heroAmount, { color: balanceColor }]}
+              style={[styles.heroBalance, { color: balanceColor }]}
               numberOfLines={1}
               adjustsFontSizeToFit
             >
               {stats.balance >= 0 ? '+' : '-'}{currency} {Math.abs(stats.balance).toFixed(2)}
             </Text>
 
-            <View style={styles.heroDividerH} />
-
-            <View style={styles.heroRow}>
-              <View style={styles.heroCol}>
-                <View style={[styles.heroBullet, { backgroundColor: '#D1FAE5' }]} />
-                <Text style={styles.heroColLabel}>{t('dashboard.total_income')}</Text>
-                <Text style={[styles.heroColAmount, { color: '#10B981' }]}>
+            <View style={styles.heroPills}>
+              <View style={styles.heroPill}>
+                <Text style={styles.heroPillLabel}>{t('dashboard.total_income')}</Text>
+                <Text style={[styles.heroPillAmount, { color: '#10B981' }]}>
                   {currency} {stats.totalIncome.toFixed(2)}
                 </Text>
               </View>
-              <View style={styles.heroDividerV} />
-              <View style={styles.heroCol}>
-                <View style={[styles.heroBullet, { backgroundColor: '#FEE2E2' }]} />
-                <Text style={styles.heroColLabel}>{t('dashboard.total_expenses')}</Text>
-                <Text style={[styles.heroColAmount, { color: '#EF4444' }]}>
+              <View style={styles.heroPillDivider} />
+              <View style={styles.heroPill}>
+                <Text style={styles.heroPillLabel}>{t('dashboard.total_expenses')}</Text>
+                <Text style={[styles.heroPillAmount, { color: '#EF4444' }]}>
                   {currency} {stats.totalExpenses.toFixed(2)}
                 </Text>
               </View>
             </View>
 
             {stats.totalIncome > 0 && (
-              <View style={styles.savingsRow}>
-                <View style={[
-                  styles.savingsBadge,
-                  { backgroundColor: savingsRate >= 0 ? '#F0FDF4' : '#FFF1F2' },
+              <View style={[
+                styles.savingsBadge,
+                { backgroundColor: savingsRate >= 0 ? '#F0FDF4' : '#FFF1F2' },
+              ]}>
+                <Text style={[
+                  styles.savingsText,
+                  { color: savingsRate >= 0 ? '#10B981' : '#EF4444' },
                 ]}>
-                  <Text style={[
-                    styles.savingsText,
-                    { color: savingsRate >= 0 ? '#10B981' : '#EF4444' },
-                  ]}>
-                    {t('stats.savings_rate')}: {savingsRate.toFixed(0)}%
-                  </Text>
-                </View>
+                  {t('stats.savings_rate')}: {savingsRate.toFixed(0)}%
+                </Text>
               </View>
             )}
           </View>
@@ -320,22 +322,22 @@ const styles = StyleSheet.create({
 
   heroCard: {
     backgroundColor: '#fff', borderRadius: 20, padding: 20, marginTop: 12,
+    alignItems: 'center',
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07, shadowRadius: 8, elevation: 3,
+    shadowOpacity: 0.07, shadowRadius: 10, elevation: 4,
   },
-  heroLabel: {
-    fontSize: 13, color: '#9CA3AF', fontWeight: '500',
-    marginBottom: 6, textAlign: 'center',
+  heroMonth: { fontSize: 12, color: '#9CA3AF', fontWeight: '500', marginBottom: 2 },
+  heroLabel: { fontSize: 13, color: '#6B7280', marginBottom: 4 },
+  heroBalance: { fontSize: 40, fontWeight: '800', letterSpacing: -1, marginBottom: 20 },
+  heroPills: {
+    flexDirection: 'row', width: '100%',
+    backgroundColor: '#F9FAFB', borderRadius: 14, padding: 14,
+    marginBottom: 12,
   },
-  heroAmount: { fontSize: 36, fontWeight: '800', textAlign: 'center', letterSpacing: -0.5 },
-  heroDividerH: { height: 1, backgroundColor: '#F3F4F6', marginVertical: 16 },
-  heroRow: { flexDirection: 'row', alignItems: 'center' },
-  heroCol: { flex: 1, alignItems: 'center', gap: 4 },
-  heroBullet: { width: 28, height: 28, borderRadius: 14, marginBottom: 2 },
-  heroColLabel: { fontSize: 12, color: '#9CA3AF' },
-  heroColAmount: { fontSize: 17, fontWeight: '700' },
-  heroDividerV: { width: 1, height: 52, backgroundColor: '#F3F4F6' },
-  savingsRow: { marginTop: 14, alignItems: 'center' },
+  heroPill: { flex: 1, alignItems: 'center', gap: 3 },
+  heroPillLabel: { fontSize: 11, color: '#9CA3AF' },
+  heroPillAmount: { fontSize: 15, fontWeight: '700' },
+  heroPillDivider: { width: 1, backgroundColor: '#E5E7EB', marginHorizontal: 8 },
   savingsBadge: { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20 },
   savingsText: { fontSize: 13, fontWeight: '600' },
 
