@@ -1,12 +1,11 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import { PieChart } from 'react-native-gifted-charts';
-import { BarChart } from 'react-native-gifted-charts';
+import { PieChart, BarChart } from 'react-native-gifted-charts';
 import { categoryLabel } from '../../src/lib/categoryName';
 import { useAuth } from '../../src/contexts/AuthContext';
-import { useMonthlyStats } from '../../src/hooks/useMonthlyStats';
+import { useMonthlyStats, CategoryStat } from '../../src/hooks/useMonthlyStats';
 import { useMonthlyTrend } from '../../src/hooks/useMonthlyTrend';
 import { useFreemium } from '../../src/hooks/useFreemium';
 import { MonthNavigator } from '../../src/components/MonthNavigator';
@@ -15,14 +14,15 @@ import { PaywallModal } from '../../src/components/PaywallModal';
 export default function StatsScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const { width: screenWidth } = useWindowDimensions();
   const { profile } = useAuth();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
-
   const [showPaywall, setShowPaywall] = useState(false);
+
   const { stats, loading: statsLoading } = useMonthlyStats(year, month);
-  const { trend, loading: trendLoading } = useMonthlyTrend(year, month);
+  const { trend, loading: trendLoading } = useMonthlyTrend(year, month, profile?.language ?? 'es');
   const { isMonthLocked } = useFreemium();
 
   const currency = profile?.currency ?? 'USD';
@@ -42,21 +42,30 @@ export default function StatsScreen() {
   }
 
   const balanceColor = stats.balance >= 0 ? '#10B981' : '#EF4444';
+  const savingsRate = stats.totalIncome > 0
+    ? ((stats.totalIncome - stats.totalExpenses) / stats.totalIncome) * 100
+    : 0;
 
-  // Donut chart data
   const pieData = stats.expensesByCategory.map(cat => ({
     value: cat.total,
     color: cat.category_color || '#9CA3AF',
   }));
 
-  // Grouped bar chart data: [income, expense] pairs per month
   const trendMax = Math.max(...trend.flatMap(m => [m.income, m.expenses]), 1);
+  // section padding 16*2 + screen padding 20*2 = 72px total horizontal
+  const chartWidth = screenWidth - 72;
+  // 6 months × 2 bars = 12 bars. Fill chartWidth:
+  // total = 12*barW + 6*innerSpacing + 5*groupSpacing
+  const innerSpacing = 3;
+  const groupSpacing = 14;
+  const barW = Math.max(10, Math.floor((chartWidth - 6 * innerSpacing - 5 * groupSpacing) / 12));
+
   const barData = trend.flatMap((m, i) => [
     {
       value: m.income,
       frontColor: '#10B981',
       label: m.label,
-      spacing: 3,
+      spacing: innerSpacing,
       labelTextStyle: {
         fontSize: 10,
         color: (m.year === year && m.month === month) ? '#4F46E5' : '#9CA3AF',
@@ -65,7 +74,7 @@ export default function StatsScreen() {
     {
       value: m.expenses,
       frontColor: '#EF4444',
-      spacing: i < trend.length - 1 ? 18 : 0,
+      spacing: i < trend.length - 1 ? groupSpacing : 0,
     },
   ]);
 
@@ -76,45 +85,72 @@ export default function StatsScreen() {
     >
       <Text style={styles.screenTitle}>{t('stats.title')}</Text>
 
-      <MonthNavigator year={year} month={month} onPrev={prevMonth} onNext={nextMonth} lang={profile?.language} isAtFreeLimit={isAtFreeLimit} onUpgradePress={() => setShowPaywall(true)} />
+      <MonthNavigator
+        year={year} month={month}
+        onPrev={prevMonth} onNext={nextMonth}
+        lang={profile?.language}
+        isAtFreeLimit={isAtFreeLimit}
+        onUpgradePress={() => setShowPaywall(true)}
+      />
 
       {statsLoading ? (
         <ActivityIndicator style={{ marginTop: 32 }} color="#4F46E5" />
       ) : (
         <>
-          {/* Resumen del mes */}
-          <View style={styles.summaryRow}>
-            <View style={[styles.summaryCard, { backgroundColor: '#F0FDF4' }]}>
-              <Text style={styles.summaryLabel}>{t('dashboard.total_income')}</Text>
-              <Text style={[styles.summaryAmount, { color: '#10B981' }]}>
-                {currency} {stats.totalIncome.toFixed(2)}
-              </Text>
-            </View>
-            <View style={[styles.summaryCard, { backgroundColor: '#FFF1F2' }]}>
-              <Text style={styles.summaryLabel}>{t('dashboard.total_expenses')}</Text>
-              <Text style={[styles.summaryAmount, { color: '#EF4444' }]}>
-                {currency} {stats.totalExpenses.toFixed(2)}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.balanceCard}>
-            <Text style={styles.balanceLabel}>{t('stats.balance_month')}</Text>
-            <Text style={[styles.balanceAmount, { color: balanceColor }]}>
-              {stats.balance >= 0 ? '+' : ''}{currency} {stats.balance.toFixed(2)}
+          {/* Hero balance card */}
+          <View style={styles.heroCard}>
+            <Text style={styles.heroLabel}>{t('stats.balance_month')}</Text>
+            <Text style={[styles.heroAmount, { color: balanceColor }]}>
+              {stats.balance >= 0 ? '+' : '-'}{currency} {Math.abs(stats.balance).toFixed(2)}
             </Text>
+
+            <View style={styles.heroDividerH} />
+
+            <View style={styles.heroRow}>
+              <View style={styles.heroCol}>
+                <View style={[styles.heroBullet, { backgroundColor: '#D1FAE5' }]} />
+                <Text style={styles.heroColLabel}>{t('dashboard.total_income')}</Text>
+                <Text style={[styles.heroColAmount, { color: '#10B981' }]}>
+                  {currency} {stats.totalIncome.toFixed(2)}
+                </Text>
+              </View>
+              <View style={styles.heroDividerV} />
+              <View style={styles.heroCol}>
+                <View style={[styles.heroBullet, { backgroundColor: '#FEE2E2' }]} />
+                <Text style={styles.heroColLabel}>{t('dashboard.total_expenses')}</Text>
+                <Text style={[styles.heroColAmount, { color: '#EF4444' }]}>
+                  {currency} {stats.totalExpenses.toFixed(2)}
+                </Text>
+              </View>
+            </View>
+
+            {stats.totalIncome > 0 && (
+              <View style={styles.savingsRow}>
+                <View style={[
+                  styles.savingsBadge,
+                  { backgroundColor: savingsRate >= 0 ? '#F0FDF4' : '#FFF1F2' },
+                ]}>
+                  <Text style={[
+                    styles.savingsText,
+                    { color: savingsRate >= 0 ? '#10B981' : '#EF4444' },
+                  ]}>
+                    {t('stats.savings_rate')}: {savingsRate.toFixed(0)}%
+                  </Text>
+                </View>
+              </View>
+            )}
           </View>
 
-          {/* Donut chart — gastos por categoría */}
+          {/* Expenses by category */}
           {stats.expensesByCategory.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>{t('stats.expenses_by_category')}</Text>
-              <View style={styles.chartRow}>
+              <View style={styles.donutWrap}>
                 <PieChart
                   data={pieData}
                   donut
-                  radius={80}
-                  innerRadius={54}
+                  radius={88}
+                  innerRadius={60}
                   centerLabelComponent={() => (
                     <View style={styles.donutCenter}>
                       <Text style={styles.donutLabel}>{currency}</Text>
@@ -122,39 +158,49 @@ export default function StatsScreen() {
                     </View>
                   )}
                 />
-                <View style={styles.legend}>
-                  {stats.expensesByCategory.map((cat) => {
-                    const pct = stats.totalExpenses > 0
-                      ? (cat.total / stats.totalExpenses) * 100
-                      : 0;
-                    return (
-                      <View key={cat.category_id} style={styles.legendItem}>
-                        <View style={[styles.legendDot, { backgroundColor: cat.category_color || '#9CA3AF' }]} />
-                        <View style={styles.legendText}>
-                          <Text style={styles.legendName} numberOfLines={1}>
-                            {categoryLabel(cat.category_name, t)}
-                          </Text>
-                          <Text style={styles.legendDetail}>
-                            {pct.toFixed(0)}% · {currency} {cat.total.toFixed(0)}
-                          </Text>
-                        </View>
-                      </View>
-                    );
-                  })}
-                </View>
+              </View>
+              <View style={styles.catList}>
+                {stats.expensesByCategory.map((cat) => (
+                  <CategoryRow
+                    key={cat.category_id}
+                    cat={cat}
+                    total={stats.totalExpenses}
+                    currency={currency}
+                    t={t}
+                  />
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Income by category */}
+          {stats.incomeByCategory.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>{t('stats.income_by_category')}</Text>
+              <View style={styles.catList}>
+                {stats.incomeByCategory.map((cat) => (
+                  <CategoryRow
+                    key={cat.category_id}
+                    cat={cat}
+                    total={stats.totalIncome}
+                    currency={currency}
+                    t={t}
+                  />
+                ))}
               </View>
             </View>
           )}
 
           {stats.totalExpenses === 0 && stats.totalIncome === 0 && (
             <View style={styles.empty}>
+              <Text style={styles.emptyIcon}>📊</Text>
               <Text style={styles.emptyText}>{t('stats.no_records')}</Text>
             </View>
           )}
         </>
       )}
 
-      {/* Tendencia 6 meses */}
+      {/* 6-month trend */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t('stats.trend_6months')}</Text>
         {trendLoading ? (
@@ -171,23 +217,27 @@ export default function StatsScreen() {
                 <Text style={styles.trendLegendLabel}>{t('dashboard.total_expenses')}</Text>
               </View>
             </View>
-
-            <BarChart
-              data={barData}
-              barWidth={9}
-              barBorderTopLeftRadius={3}
-              barBorderTopRightRadius={3}
-              height={110}
-              noOfSections={3}
-              maxValue={Math.ceil(trendMax * 1.25)}
-              yAxisThickness={0}
-              xAxisThickness={1}
-              xAxisColor="#E5E7EB"
-              rulesColor="#F3F4F6"
-              hideYAxisText
-              xAxisLabelTextStyle={{ fontSize: 10, color: '#9CA3AF' }}
-              isAnimated
-            />
+            <View style={{ overflow: 'hidden' }}>
+              <BarChart
+                data={barData}
+                barWidth={barW}
+                barBorderTopLeftRadius={4}
+                barBorderTopRightRadius={4}
+                height={120}
+                width={chartWidth}
+                noOfSections={3}
+                maxValue={Math.ceil(trendMax * 1.25)}
+                yAxisThickness={0}
+                yAxisLabelWidth={0}
+                initialSpacing={0}
+                xAxisThickness={1}
+                xAxisColor="#E5E7EB"
+                rulesColor="#F3F4F6"
+                hideYAxisText
+                xAxisLabelTextStyle={{ fontSize: 10, color: '#9CA3AF' }}
+                isAnimated
+              />
+            </View>
           </>
         )}
       </View>
@@ -198,24 +248,81 @@ export default function StatsScreen() {
   );
 }
 
+interface CategoryRowProps {
+  cat: CategoryStat;
+  total: number;
+  currency: string;
+  t: (key: string) => string;
+}
+
+function CategoryRow({ cat, total, currency, t }: CategoryRowProps) {
+  const pct = total > 0 ? (cat.total / total) * 100 : 0;
+  const color = cat.category_color || '#9CA3AF';
+
+  return (
+    <View style={rowStyles.wrap}>
+      <View style={rowStyles.top}>
+        <View style={rowStyles.left}>
+          {cat.category_icon ? (
+            <Text style={rowStyles.icon}>{cat.category_icon}</Text>
+          ) : (
+            <View style={[rowStyles.dot, { backgroundColor: color }]} />
+          )}
+          <Text style={rowStyles.name} numberOfLines={1}>
+            {categoryLabel(cat.category_name, t)}
+          </Text>
+        </View>
+        <Text style={rowStyles.detail}>
+          {pct.toFixed(0)}% · {currency} {cat.total.toFixed(2)}
+        </Text>
+      </View>
+      <View style={rowStyles.bar}>
+        <View style={[rowStyles.fill, { width: `${pct}%` as any, backgroundColor: color }]} />
+      </View>
+    </View>
+  );
+}
+
+const rowStyles = StyleSheet.create({
+  wrap: { marginBottom: 14 },
+  top: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', marginBottom: 6,
+  },
+  left: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
+  icon: { fontSize: 17, width: 24, textAlign: 'center' },
+  dot: { width: 12, height: 12, borderRadius: 6, flexShrink: 0 },
+  name: { fontSize: 14, color: '#374151', fontWeight: '500', flex: 1 },
+  detail: { fontSize: 12, color: '#9CA3AF', marginLeft: 8 },
+  bar: { height: 6, backgroundColor: '#F3F4F6', borderRadius: 3, overflow: 'hidden' },
+  fill: { height: 6, borderRadius: 3 },
+});
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F9FAFB' },
   content: { paddingHorizontal: 20, paddingBottom: 20 },
   screenTitle: { fontSize: 24, fontWeight: '700', color: '#111827', marginBottom: 4 },
 
-  summaryRow: { flexDirection: 'row', gap: 12, marginTop: 4 },
-  summaryCard: { flex: 1, borderRadius: 12, padding: 16 },
-  summaryLabel: { fontSize: 12, color: '#6B7280', marginBottom: 4 },
-  summaryAmount: { fontSize: 17, fontWeight: '700' },
-
-  balanceCard: {
-    backgroundColor: '#fff', borderRadius: 12, padding: 16,
-    marginTop: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
+  heroCard: {
+    backgroundColor: '#fff', borderRadius: 16, padding: 20, marginTop: 12,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07, shadowRadius: 8, elevation: 3,
   },
-  balanceLabel: { fontSize: 14, color: '#6B7280' },
-  balanceAmount: { fontSize: 20, fontWeight: '700' },
+  heroLabel: {
+    fontSize: 13, color: '#9CA3AF', fontWeight: '500',
+    marginBottom: 6, textAlign: 'center',
+  },
+  heroAmount: { fontSize: 36, fontWeight: '800', textAlign: 'center', letterSpacing: -0.5 },
+  heroDividerH: { height: 1, backgroundColor: '#F3F4F6', marginVertical: 16 },
+  heroRow: { flexDirection: 'row', alignItems: 'center' },
+  heroCol: { flex: 1, alignItems: 'center', gap: 4 },
+  heroBullet: { width: 28, height: 28, borderRadius: 14, marginBottom: 2 },
+  heroColLabel: { fontSize: 12, color: '#9CA3AF' },
+  heroColAmount: { fontSize: 17, fontWeight: '700' },
+  heroDividerV: { width: 1, height: 52, backgroundColor: '#F3F4F6' },
+  savingsRow: { marginTop: 14, alignItems: 'center' },
+  savingsBadge: { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20 },
+  savingsText: { fontSize: 13, fontWeight: '600' },
 
   section: {
     backgroundColor: '#fff', borderRadius: 12, padding: 16, marginTop: 12,
@@ -224,24 +331,17 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 16 },
 
-  // Donut chart layout
-  chartRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  donutWrap: { alignItems: 'center', marginBottom: 20 },
   donutCenter: { alignItems: 'center' },
   donutLabel: { fontSize: 11, color: '#6B7280' },
-  donutAmount: { fontSize: 15, fontWeight: '700', color: '#111827' },
+  donutAmount: { fontSize: 16, fontWeight: '700', color: '#111827' },
 
-  // Legend al lado del donut
-  legend: { flex: 1, gap: 10 },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  legendDot: { width: 10, height: 10, borderRadius: 5, flexShrink: 0 },
-  legendText: { flex: 1 },
-  legendName: { fontSize: 13, color: '#374151', fontWeight: '500' },
-  legendDetail: { fontSize: 11, color: '#9CA3AF' },
+  catList: {},
 
-  empty: { alignItems: 'center', paddingVertical: 32 },
+  empty: { alignItems: 'center', paddingVertical: 36 },
+  emptyIcon: { fontSize: 40, marginBottom: 12 },
   emptyText: { fontSize: 14, color: '#9CA3AF' },
 
-  // Trend section
   trendLegend: { flexDirection: 'row', gap: 16, marginBottom: 12 },
   trendLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   trendDot: { width: 10, height: 10, borderRadius: 5 },

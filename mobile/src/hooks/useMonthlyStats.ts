@@ -8,6 +8,7 @@ export interface CategoryStat {
   category_id: string;
   category_name: string;
   category_color: string;
+  category_icon: string;
   total: number;
 }
 
@@ -16,6 +17,7 @@ export interface MonthlyStats {
   totalIncome: number;
   balance: number;
   expensesByCategory: CategoryStat[];
+  incomeByCategory: CategoryStat[];
 }
 
 export function useMonthlyStats(year: number, month: number) {
@@ -24,6 +26,7 @@ export function useMonthlyStats(year: number, month: number) {
     totalIncome: 0,
     balance: 0,
     expensesByCategory: [],
+    incomeByCategory: [],
   });
   const [loading, setLoading] = useState(true);
 
@@ -41,7 +44,7 @@ export function useMonthlyStats(year: number, month: number) {
       .observe()
       .subscribe(async (txRecords) => {
         if (txRecords.length === 0) {
-          setStats({ totalExpenses: 0, totalIncome: 0, balance: 0, expensesByCategory: [] });
+          setStats({ totalExpenses: 0, totalIncome: 0, balance: 0, expensesByCategory: [], incomeByCategory: [] });
           setLoading(false);
           return;
         }
@@ -57,23 +60,35 @@ export function useMonthlyStats(year: number, month: number) {
         let totalExpenses = 0;
         let totalIncome = 0;
         const catStats: Record<string, CategoryStat> = {};
+        const incStats: Record<string, CategoryStat> = {};
 
         for (const t of txRecords) {
           const amount = t.amount;
+          const cat = catMap.get(t.categoryId);
           if (t.type === 'expense') {
             totalExpenses += amount;
-            const cat = catMap.get(t.categoryId);
             if (cat) {
               catStats[cat.id] = catStats[cat.id] ?? {
                 category_id: cat.id,
                 category_name: cat.name,
                 category_color: cat.color,
+                category_icon: cat.icon ?? '',
                 total: 0,
               };
               catStats[cat.id].total += amount;
             }
           } else {
             totalIncome += amount;
+            if (cat) {
+              incStats[cat.id] = incStats[cat.id] ?? {
+                category_id: cat.id,
+                category_name: cat.name,
+                category_color: cat.color,
+                category_icon: cat.icon ?? '',
+                total: 0,
+              };
+              incStats[cat.id].total += amount;
+            }
           }
         }
 
@@ -82,6 +97,7 @@ export function useMonthlyStats(year: number, month: number) {
           totalIncome,
           balance: totalIncome - totalExpenses,
           expensesByCategory: Object.values(catStats).sort((a, b) => b.total - a.total),
+          incomeByCategory: Object.values(incStats).sort((a, b) => b.total - a.total),
         });
         setLoading(false);
       });

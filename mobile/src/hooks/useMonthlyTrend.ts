@@ -11,11 +11,16 @@ export interface MonthTrend {
   expenses: number;
 }
 
-const MONTH_LABELS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const MONTH_LABELS: Record<string, string[]> = {
+  es: ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'],
+  en: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+};
 
-export function useMonthlyTrend(endYear: number, endMonth: number) {
+export function useMonthlyTrend(endYear: number, endMonth: number, lang = 'es') {
   const [trend, setTrend] = useState<MonthTrend[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const labels = MONTH_LABELS[lang] ?? MONTH_LABELS['es'];
 
   useEffect(() => {
     const months: { year: number; month: number }[] = [];
@@ -54,7 +59,7 @@ export function useMonthlyTrend(endYear: number, endMonth: number) {
           months.map(({ year, month }) => ({
             year,
             month,
-            label: MONTH_LABELS[month - 1],
+            label: labels[month - 1],
             ...map[`${year}-${month}`],
           }))
         );
@@ -62,7 +67,7 @@ export function useMonthlyTrend(endYear: number, endMonth: number) {
       });
 
     return () => subscription.unsubscribe();
-  }, [endYear, endMonth]);
+  }, [endYear, endMonth, lang]);
 
   return { trend, loading };
 }

@@ -79,8 +79,11 @@
     "title": "Estadísticas",
     "balance_month": "Balance del mes",
     "expenses_by_category": "Gastos por categoría",
+    "income_by_category": "Ingresos por categoría",
     "trend_6months": "Tendencia 6 meses",
-    "no_records": "Sin registros este mes"
+    "no_records": "Sin registros este mes",
+    "savings_rate": "Tasa de ahorro",
+    "top_expense": "Mayor gasto"
   },
   "categories": {
     "title": "Categorías",

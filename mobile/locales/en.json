@@ -79,8 +79,11 @@
     "title": "Statistics",
     "balance_month": "Month balance",
     "expenses_by_category": "Expenses by category",
+    "income_by_category": "Income by category",
     "trend_6months": "6-month trend",
-    "no_records": "No records this month"
+    "no_records": "No records this month",
+    "savings_rate": "Savings rate",
+    "top_expense": "Top expense"
   },
   "categories": {
     "title": "Categories",
