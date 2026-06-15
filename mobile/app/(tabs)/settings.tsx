@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, ActivityIndicator, Alert, Switch, Platform,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -22,6 +22,7 @@ const LANGUAGES = [
   { code: 'es', label: 'Español' },
   { code: 'en', label: 'English' },
 ];
+const APP_VERSION = '1.0.0';
 
 export default function SettingsScreen() {
   const { t } = useTranslation();
@@ -36,14 +37,12 @@ export default function SettingsScreen() {
     loading: notifLoading, permissionDenied, schedule, cancel,
   } = useNotificationsContext();
 
-  // Estado local de la UI de notificaciones
   const [localEnabled, setLocalEnabled] = useState(false);
   const [localHour, setLocalHour] = useState(20);
   const [localMinute, setLocalMinute] = useState(0);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [scheduling, setScheduling] = useState(false);
 
-  // Sincroniza estado local con el contexto cuando carga
   useEffect(() => {
     setLocalEnabled(scheduled);
     setLocalHour(savedHour);
@@ -61,6 +60,13 @@ export default function SettingsScreen() {
     }
   }
 
+  function handleTimeChange(event: DateTimePickerEvent, date?: Date) {
+    if (Platform.OS === 'android') setShowTimePicker(false);
+    if (event.type === 'dismissed' || !date) return;
+    setLocalHour(date.getHours());
+    setLocalMinute(date.getMinutes());
+  }
+
   async function handleSchedule() {
     setScheduling(true);
     try {
@@ -73,6 +79,7 @@ export default function SettingsScreen() {
       setScheduling(false);
     }
   }
+
   const [currency, setCurrency] = useState(profile?.currency ?? 'USD');
   const [language, setLanguage] = useState(profile?.language ?? 'es');
   const [saving, setSaving] = useState(false);
@@ -119,205 +126,218 @@ export default function SettingsScreen() {
   }
 
   const changed = profile?.currency !== currency || profile?.language !== language;
+  const email = session?.user.email ?? '';
+  const initials = email.slice(0, 2).toUpperCase();
+
+  const timeDate = (() => {
+    const d = new Date();
+    d.setHours(localHour, localMinute, 0, 0);
+    return d;
+  })();
 
   return (
     <View style={[styles.outerContainer, { paddingTop: insets.top }]}>
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-    >
-      <Text style={styles.screenTitle}>{t('settings.title')}</Text>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <Text style={styles.screenTitle}>{t('settings.title')}</Text>
 
-      {/* Cuenta */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('settings.account')}</Text>
-        <View style={styles.row}>
-          <Text style={styles.rowLabel}>{t('settings.email')}</Text>
-          <Text style={styles.rowValue} numberOfLines={1}>{session?.user.email}</Text>
-        </View>
-        <TouchableOpacity style={styles.row} onPress={() => router.push('/categories')}>
-          <Text style={styles.rowLabel}>{t('settings.categories_title')}</Text>
-          <Text style={styles.rowChevron}>›</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.row} onPress={() => router.push('/budget')}>
-          <Text style={styles.rowLabel}>{t('budget.nav_row')}</Text>
-          <Text style={styles.rowChevron}>›</Text>
-        </TouchableOpacity>
-        <View style={[styles.row, { borderBottomWidth: 0 }]}>
-          <Text style={styles.rowLabel}>{t('settings.plan')}</Text>
-          <View style={[styles.planBadge, profile?.plan === 'premium' ? styles.planPremium : styles.planFree]}>
-            <Text style={[styles.planText, profile?.plan === 'premium' ? styles.planTextPremium : styles.planTextFree]}>
-              {profile?.plan === 'premium' ? t('settings.plan_premium') : t('settings.plan_free')}
-            </Text>
-          </View>
-        </View>
-      </View>
+        {/* Avatar + cuenta */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('settings.account')}</Text>
 
-      {/* Preferencias */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('settings.preferences')}</Text>
-
-        {message && (
-          <View style={{ marginBottom: 4 }}>
-            <AppMessage message={message.text} type={message.type} />
-          </View>
-        )}
-
-        <Text style={styles.fieldLabel}>{t('settings.currency')}</Text>
-        <View style={styles.chips}>
-          {CURRENCIES.map((c) => (
-            <TouchableOpacity
-              key={c}
-              style={[styles.chip, currency === c && styles.chipSelected]}
-              onPress={() => { setCurrency(c); setMessage(null); }}
-            >
-              <Text style={[styles.chipText, currency === c && styles.chipTextSelected]}>{c}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <Text style={[styles.fieldLabel, { marginTop: 16 }]}>{t('settings.language')}</Text>
-        <View style={styles.chips}>
-          {LANGUAGES.map((l) => (
-            <TouchableOpacity
-              key={l.code}
-              style={[styles.chip, language === l.code && styles.chipSelected]}
-              onPress={() => { setLanguage(l.code); setMessage(null); }}
-            >
-              <Text style={[styles.chipText, language === l.code && styles.chipTextSelected]}>
-                {l.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <TouchableOpacity
-          style={[styles.saveBtn, (!changed || saving) && styles.saveBtnDisabled]}
-          onPress={handleSave}
-          disabled={!changed || saving}
-        >
-          {saving
-            ? <ActivityIndicator color="#fff" />
-            : <Text style={styles.saveBtnText}>{t('settings.save_preferences')}</Text>}
-        </TouchableOpacity>
-      </View>
-
-      {/* Notificaciones */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('notifications.title')}</Text>
-
-        <View style={[styles.row, { borderBottomWidth: localEnabled ? 1 : 0 }]}>
-          <Text style={styles.rowLabel}>{t('notifications.reminder')}</Text>
-          {notifLoading ? (
-            <ActivityIndicator size="small" color="#4F46E5" />
-          ) : (
-            <Switch
-              value={localEnabled}
-              onValueChange={handleToggleNotif}
-              trackColor={{ false: '#E5E7EB', true: '#C7D2FE' }}
-              thumbColor={localEnabled ? '#4F46E5' : '#9CA3AF'}
-            />
-          )}
-        </View>
-
-        {localEnabled && (
-          <>
-            <TouchableOpacity
-              style={[styles.row, { borderBottomWidth: 0 }]}
-              onPress={() => setShowTimePicker(true)}
-            >
-              <Text style={styles.rowLabel}>{t('notifications.reminder_time')}</Text>
-              <Text style={styles.rowValue}>
-                {String(localHour).padStart(2, '0')}:{String(localMinute).padStart(2, '0')}
-              </Text>
-            </TouchableOpacity>
-
-            {showTimePicker && (
-              <DateTimePicker
-                mode="time"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                value={(() => { const d = new Date(); d.setHours(localHour, localMinute, 0, 0); return d; })()}
-                onValueChange={(date?: Date) => {
-                  if (date) { setLocalHour(date.getHours()); setLocalMinute(date.getMinutes()); }
-                }}
-                onDismiss={() => setShowTimePicker(false)}
-              />
-            )}
-
-            {pendingSave && (
-              <TouchableOpacity
-                style={[styles.scheduleBtn, scheduling && styles.saveBtnDisabled]}
-                onPress={handleSchedule}
-                disabled={scheduling}
-              >
-                {scheduling
-                  ? <ActivityIndicator color="#fff" />
-                  : <Text style={styles.scheduleBtnText}>
-                      {scheduled ? t('notifications.update_btn') : t('notifications.schedule_btn')}
-                    </Text>
-                }
+          <View style={[styles.row, styles.avatarRow]}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>{initials}</Text>
+            </View>
+            <View style={styles.avatarInfo}>
+              <Text style={styles.avatarEmail} numberOfLines={1}>{email}</Text>
+              <View style={[styles.planBadge, profile?.plan === 'premium' ? styles.planPremium : styles.planFree]}>
+                <Text style={[styles.planText, profile?.plan === 'premium' ? styles.planTextPremium : styles.planTextFree]}>
+                  {profile?.plan === 'premium' ? t('settings.plan_premium') : t('settings.plan_free')}
+                </Text>
+              </View>
+            </View>
+            {profile?.plan !== 'premium' && (
+              <TouchableOpacity style={styles.upgradeBtn} onPress={() => setShowPaywall(true)}>
+                <Text style={styles.upgradeBtnText}>{t('settings.upgrade')}</Text>
               </TouchableOpacity>
             )}
-
-            {scheduled && !pendingSave && (
-              <Text style={styles.activeText}>
-                {t('notifications.active_at')} {String(savedHour).padStart(2, '0')}:{String(savedMinute).padStart(2, '0')}
-              </Text>
-            )}
-          </>
-        )}
-
-        {permissionDenied && (
-          <Text style={styles.permissionDenied}>{t('notifications.permission_denied')}</Text>
-        )}
-      </View>
-
-      {/* Seguridad */}
-      {biometricAvailable && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('settings.security')}</Text>
-          <View style={[styles.row, { borderBottomWidth: 0 }]}>
-            <Text style={styles.rowLabel}>{t('settings.biometric_lock')}</Text>
-            <Switch
-              value={biometricEnabled}
-              onValueChange={setBiometricEnabled}
-              trackColor={{ false: '#E5E7EB', true: '#C7D2FE' }}
-              thumbColor={biometricEnabled ? '#4F46E5' : '#9CA3AF'}
-            />
           </View>
-        </View>
-      )}
 
-      {/* Exportar */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{t('settings.export_title')}</Text>
-        <TouchableOpacity
-          style={[styles.exportBtn, !isPremium && styles.exportBtnLocked]}
-          onPress={handleExport}
-          disabled={exporting}
-        >
-          {exporting ? (
-            <ActivityIndicator color={isPremium ? '#fff' : '#9CA3AF'} />
-          ) : (
-            <View style={styles.exportRow}>
-              {!isPremium && <Text style={styles.exportLock}>🔒 </Text>}
-              <Text style={[styles.exportBtnText, !isPremium && styles.exportBtnTextLocked]}>
-                {t('settings.export_csv')}
-              </Text>
+          <TouchableOpacity style={styles.row} onPress={() => router.push('/categories')}>
+            <Text style={styles.rowLabel}>{t('settings.categories_title')}</Text>
+            <Text style={styles.rowChevron}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.row, { borderBottomWidth: 0 }]} onPress={() => router.push('/budget')}>
+            <Text style={styles.rowLabel}>{t('budget.nav_row')}</Text>
+            <Text style={styles.rowChevron}>›</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Preferencias */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('settings.preferences')}</Text>
+
+          {message && (
+            <View style={{ marginBottom: 4 }}>
+              <AppMessage message={message.text} type={message.type} />
             </View>
           )}
+
+          <Text style={styles.fieldLabel}>{t('settings.currency')}</Text>
+          <View style={styles.chips}>
+            {CURRENCIES.map((c) => (
+              <TouchableOpacity
+                key={c}
+                style={[styles.chip, currency === c && styles.chipSelected]}
+                onPress={() => { setCurrency(c); setMessage(null); }}
+              >
+                <Text style={[styles.chipText, currency === c && styles.chipTextSelected]}>{c}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={[styles.fieldLabel, { marginTop: 16 }]}>{t('settings.language')}</Text>
+          <View style={styles.chips}>
+            {LANGUAGES.map((l) => (
+              <TouchableOpacity
+                key={l.code}
+                style={[styles.chip, language === l.code && styles.chipSelected]}
+                onPress={() => { setLanguage(l.code); setMessage(null); }}
+              >
+                <Text style={[styles.chipText, language === l.code && styles.chipTextSelected]}>
+                  {l.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <TouchableOpacity
+            style={[styles.saveBtn, (!changed || saving) && styles.saveBtnDisabled]}
+            onPress={handleSave}
+            disabled={!changed || saving}
+          >
+            {saving
+              ? <ActivityIndicator color="#fff" />
+              : <Text style={styles.saveBtnText}>{t('settings.save_preferences')}</Text>}
+          </TouchableOpacity>
+        </View>
+
+        {/* Notificaciones */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('notifications.title')}</Text>
+
+          <View style={[styles.row, { borderBottomWidth: localEnabled ? 1 : 0 }]}>
+            <Text style={styles.rowLabel}>{t('notifications.reminder')}</Text>
+            {notifLoading ? (
+              <ActivityIndicator size="small" color="#4F46E5" />
+            ) : (
+              <Switch
+                value={localEnabled}
+                onValueChange={handleToggleNotif}
+                trackColor={{ false: '#E5E7EB', true: '#C7D2FE' }}
+                thumbColor={localEnabled ? '#4F46E5' : '#9CA3AF'}
+              />
+            )}
+          </View>
+
+          {localEnabled && (
+            <>
+              <TouchableOpacity
+                style={[styles.row, { borderBottomWidth: 0 }]}
+                onPress={() => setShowTimePicker(true)}
+              >
+                <Text style={styles.rowLabel}>{t('notifications.reminder_time')}</Text>
+                <Text style={styles.timeValue}>
+                  {String(localHour).padStart(2, '0')}:{String(localMinute).padStart(2, '0')}
+                </Text>
+              </TouchableOpacity>
+
+              {showTimePicker && (
+                <DateTimePicker
+                  mode="time"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  value={timeDate}
+                  onChange={handleTimeChange}
+                />
+              )}
+
+              {pendingSave && (
+                <TouchableOpacity
+                  style={[styles.scheduleBtn, scheduling && styles.saveBtnDisabled]}
+                  onPress={handleSchedule}
+                  disabled={scheduling}
+                >
+                  {scheduling
+                    ? <ActivityIndicator color="#fff" />
+                    : <Text style={styles.scheduleBtnText}>
+                        {scheduled ? t('notifications.update_btn') : t('notifications.schedule_btn')}
+                      </Text>
+                  }
+                </TouchableOpacity>
+              )}
+
+              {scheduled && !pendingSave && (
+                <Text style={styles.activeText}>
+                  ✓ {t('notifications.active_at')} {String(savedHour).padStart(2, '0')}:{String(savedMinute).padStart(2, '0')}
+                </Text>
+              )}
+            </>
+          )}
+
+          {permissionDenied && (
+            <Text style={styles.permissionDenied}>{t('notifications.permission_denied')}</Text>
+          )}
+        </View>
+
+        {/* Seguridad */}
+        {biometricAvailable && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t('settings.security')}</Text>
+            <View style={[styles.row, { borderBottomWidth: 0 }]}>
+              <Text style={styles.rowLabel}>{t('settings.biometric_lock')}</Text>
+              <Switch
+                value={biometricEnabled}
+                onValueChange={setBiometricEnabled}
+                trackColor={{ false: '#E5E7EB', true: '#C7D2FE' }}
+                thumbColor={biometricEnabled ? '#4F46E5' : '#9CA3AF'}
+              />
+            </View>
+          </View>
+        )}
+
+        {/* Exportar */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('settings.export_title')}</Text>
+          <TouchableOpacity
+            style={[styles.exportBtn, !isPremium && styles.exportBtnLocked]}
+            onPress={handleExport}
+            disabled={exporting}
+          >
+            {exporting ? (
+              <ActivityIndicator color={isPremium ? '#fff' : '#9CA3AF'} />
+            ) : (
+              <View style={styles.exportRow}>
+                {!isPremium && <Text style={styles.exportLock}>🔒 </Text>}
+                <Text style={[styles.exportBtnText, !isPremium && styles.exportBtnTextLocked]}>
+                  {t('settings.export_csv')}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          <Text style={styles.exportHint}>{t('settings.export_csv_hint')}</Text>
+        </View>
+
+        {/* Sesión */}
+        <TouchableOpacity style={styles.signOutBtn} onPress={signOut}>
+          <Text style={styles.signOutText}>{t('auth.sign_out')}</Text>
         </TouchableOpacity>
-        <Text style={styles.exportHint}>{t('settings.export_csv_hint')}</Text>
-      </View>
 
-      {/* Sesión */}
-      <TouchableOpacity style={styles.signOutBtn} onPress={signOut}>
-        <Text style={styles.signOutText}>{t('auth.sign_out')}</Text>
-      </TouchableOpacity>
+        {/* Versión */}
+        <Text style={styles.versionText}>Spendly v{APP_VERSION}</Text>
 
-      <View style={{ height: 24 }} />
-      <PaywallModal visible={showPaywall} onClose={() => setShowPaywall(false)} />
-    </ScrollView>
+        <View style={{ height: 24 }} />
+        <PaywallModal visible={showPaywall} onClose={() => setShowPaywall(false)} />
+      </ScrollView>
     </View>
   );
 }
@@ -329,7 +349,7 @@ const styles = StyleSheet.create({
   screenTitle: { fontSize: 24, fontWeight: '700', color: '#111827', marginBottom: 16 },
 
   section: {
-    backgroundColor: '#fff', borderRadius: 12, paddingHorizontal: 16,
+    backgroundColor: '#fff', borderRadius: 14, paddingHorizontal: 16,
     paddingTop: 16, paddingBottom: 8, marginBottom: 12,
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
@@ -343,16 +363,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
   },
+  avatarRow: { gap: 12, paddingVertical: 14 },
   rowLabel: { fontSize: 15, color: '#374151' },
   rowValue: { fontSize: 15, color: '#9CA3AF', maxWidth: '60%' },
   rowChevron: { fontSize: 20, color: '#9CA3AF' },
 
-  planBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  avatar: {
+    width: 46, height: 46, borderRadius: 23,
+    backgroundColor: '#EEF2FF', justifyContent: 'center', alignItems: 'center', flexShrink: 0,
+  },
+  avatarText: { fontSize: 17, fontWeight: '700', color: '#4F46E5' },
+  avatarInfo: { flex: 1, gap: 4 },
+  avatarEmail: { fontSize: 14, color: '#374151', fontWeight: '500' },
+
+  planBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20, alignSelf: 'flex-start' },
   planFree: { backgroundColor: '#F3F4F6' },
   planPremium: { backgroundColor: '#FEF3C7' },
-  planText: { fontSize: 13, fontWeight: '600' },
+  planText: { fontSize: 11, fontWeight: '700' },
   planTextFree: { color: '#6B7280' },
   planTextPremium: { color: '#D97706' },
+
+  upgradeBtn: {
+    backgroundColor: '#4F46E5', borderRadius: 20,
+    paddingHorizontal: 12, paddingVertical: 6, flexShrink: 0,
+  },
+  upgradeBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
 
   fieldLabel: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 10 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
@@ -370,6 +405,8 @@ const styles = StyleSheet.create({
   },
   saveBtnDisabled: { backgroundColor: '#C7D2FE' },
   saveBtnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+
+  timeValue: { fontSize: 15, color: '#4F46E5', fontWeight: '600' },
 
   exportBtn: {
     height: 46, backgroundColor: '#4F46E5', borderRadius: 10,
@@ -396,9 +433,11 @@ const styles = StyleSheet.create({
   },
 
   signOutBtn: {
-    height: 50, backgroundColor: '#fff', borderRadius: 12,
+    height: 50, backgroundColor: '#fff', borderRadius: 14,
     justifyContent: 'center', alignItems: 'center',
     borderWidth: 1.5, borderColor: '#FEE2E2',
   },
   signOutText: { color: '#EF4444', fontSize: 15, fontWeight: '600' },
+
+  versionText: { textAlign: 'center', fontSize: 12, color: '#D1D5DB', marginTop: 16 },
 });
