@@ -240,11 +240,13 @@ function CategoryRow({ cat, total, currency, t, budget }: CategoryRowProps) {
       <View style={catStyles.wrap}>
         <View style={catStyles.top}>
           <View style={catStyles.left}>
-            {cat.category_icon ? (
-              <Text style={catStyles.icon}>{cat.category_icon}</Text>
-            ) : (
-              <View style={[catStyles.dot, { backgroundColor: color }]} />
-            )}
+            <View style={[catStyles.iconWrap, { backgroundColor: color + '18' }]}>
+              {cat.category_icon ? (
+                <Text style={catStyles.icon}>{cat.category_icon}</Text>
+              ) : (
+                <View style={[catStyles.dot, { backgroundColor: color }]} />
+              )}
+            </View>
             <Text style={catStyles.name} numberOfLines={1}>
               {categoryLabel(cat.category_name, t)}
             </Text>
@@ -270,11 +272,13 @@ function CategoryRow({ cat, total, currency, t, budget }: CategoryRowProps) {
     <View style={catStyles.wrap}>
       <View style={catStyles.top}>
         <View style={catStyles.left}>
-          {cat.category_icon ? (
-            <Text style={catStyles.icon}>{cat.category_icon}</Text>
-          ) : (
-            <View style={[catStyles.dot, { backgroundColor: color }]} />
-          )}
+          <View style={[catStyles.iconWrap, { backgroundColor: color + '18' }]}>
+            {cat.category_icon ? (
+              <Text style={catStyles.icon}>{cat.category_icon}</Text>
+            ) : (
+              <View style={[catStyles.dot, { backgroundColor: color }]} />
+            )}
+          </View>
           <Text style={catStyles.name} numberOfLines={1}>
             {categoryLabel(cat.category_name, t)}
           </Text>
@@ -295,7 +299,8 @@ const catStyles = StyleSheet.create({
     alignItems: 'center', marginBottom: 5,
   },
   left: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
-  icon: { fontSize: 16, width: 22, textAlign: 'center' },
+  iconWrap: { width: 30, height: 30, borderRadius: 8, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  icon: { fontSize: 15 },
   dot: { width: 10, height: 10, borderRadius: 5 },
   name: { fontSize: 14, color: '#374151', fontWeight: '500', flex: 1 },
   detail: { fontSize: 12, color: '#9CA3AF', marginLeft: 8 },

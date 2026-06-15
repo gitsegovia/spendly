@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { PieChart, BarChart } from 'react-native-gifted-charts';
@@ -8,8 +8,10 @@ import { useAuth } from '../../src/contexts/AuthContext';
 import { useMonthlyStats, CategoryStat } from '../../src/hooks/useMonthlyStats';
 import { useMonthlyTrend } from '../../src/hooks/useMonthlyTrend';
 import { useFreemium } from '../../src/hooks/useFreemium';
+import { useDatabase } from '../../src/contexts/DatabaseContext';
 import { MonthNavigator } from '../../src/components/MonthNavigator';
 import { PaywallModal } from '../../src/components/PaywallModal';
+import { EmptyState } from '../../src/components/EmptyState';
 
 export default function StatsScreen() {
   const { t } = useTranslation();
@@ -24,6 +26,7 @@ export default function StatsScreen() {
   const { stats, loading: statsLoading } = useMonthlyStats(year, month);
   const { trend, loading: trendLoading } = useMonthlyTrend(year, month, profile?.language ?? 'es');
   const { isMonthLocked } = useFreemium();
+  const { syncStatus, sync } = useDatabase();
 
   const currency = profile?.currency ?? 'USD';
   const prevMonthYear = month === 1 ? year - 1 : year;
@@ -82,6 +85,14 @@ export default function StatsScreen() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
+      refreshControl={
+        <RefreshControl
+          refreshing={syncStatus === 'syncing'}
+          onRefresh={() => sync('manual')}
+          tintColor="#4F46E5"
+          colors={['#4F46E5']}
+        />
+      }
     >
       <Text style={styles.screenTitle}>{t('stats.title')}</Text>
 
@@ -100,7 +111,11 @@ export default function StatsScreen() {
           {/* Hero balance card */}
           <View style={styles.heroCard}>
             <Text style={styles.heroLabel}>{t('stats.balance_month')}</Text>
-            <Text style={[styles.heroAmount, { color: balanceColor }]}>
+            <Text
+              style={[styles.heroAmount, { color: balanceColor }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+            >
               {stats.balance >= 0 ? '+' : '-'}{currency} {Math.abs(stats.balance).toFixed(2)}
             </Text>
 
@@ -192,10 +207,7 @@ export default function StatsScreen() {
           )}
 
           {stats.totalExpenses === 0 && stats.totalIncome === 0 && (
-            <View style={styles.empty}>
-              <Text style={styles.emptyIcon}>📊</Text>
-              <Text style={styles.emptyText}>{t('stats.no_records')}</Text>
-            </View>
+            <EmptyState icon="📊" title={t('stats.no_records')} />
           )}
         </>
       )}
@@ -263,11 +275,13 @@ function CategoryRow({ cat, total, currency, t }: CategoryRowProps) {
     <View style={rowStyles.wrap}>
       <View style={rowStyles.top}>
         <View style={rowStyles.left}>
-          {cat.category_icon ? (
-            <Text style={rowStyles.icon}>{cat.category_icon}</Text>
-          ) : (
-            <View style={[rowStyles.dot, { backgroundColor: color }]} />
-          )}
+          <View style={[rowStyles.iconWrap, { backgroundColor: color + '18' }]}>
+            {cat.category_icon ? (
+              <Text style={rowStyles.icon}>{cat.category_icon}</Text>
+            ) : (
+              <View style={[rowStyles.dot, { backgroundColor: color }]} />
+            )}
+          </View>
           <Text style={rowStyles.name} numberOfLines={1}>
             {categoryLabel(cat.category_name, t)}
           </Text>
@@ -290,8 +304,9 @@ const rowStyles = StyleSheet.create({
     alignItems: 'center', marginBottom: 6,
   },
   left: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
-  icon: { fontSize: 17, width: 24, textAlign: 'center' },
-  dot: { width: 12, height: 12, borderRadius: 6, flexShrink: 0 },
+  iconWrap: { width: 30, height: 30, borderRadius: 8, justifyContent: 'center', alignItems: 'center', flexShrink: 0 },
+  icon: { fontSize: 15 },
+  dot: { width: 10, height: 10, borderRadius: 5 },
   name: { fontSize: 14, color: '#374151', fontWeight: '500', flex: 1 },
   detail: { fontSize: 12, color: '#9CA3AF', marginLeft: 8 },
   bar: { height: 6, backgroundColor: '#F3F4F6', borderRadius: 3, overflow: 'hidden' },
@@ -304,7 +319,7 @@ const styles = StyleSheet.create({
   screenTitle: { fontSize: 24, fontWeight: '700', color: '#111827', marginBottom: 4 },
 
   heroCard: {
-    backgroundColor: '#fff', borderRadius: 16, padding: 20, marginTop: 12,
+    backgroundColor: '#fff', borderRadius: 20, padding: 20, marginTop: 12,
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.07, shadowRadius: 8, elevation: 3,
   },
@@ -325,7 +340,7 @@ const styles = StyleSheet.create({
   savingsText: { fontSize: 13, fontWeight: '600' },
 
   section: {
-    backgroundColor: '#fff', borderRadius: 12, padding: 16, marginTop: 12,
+    backgroundColor: '#fff', borderRadius: 14, padding: 16, marginTop: 12,
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
   },
@@ -337,10 +352,6 @@ const styles = StyleSheet.create({
   donutAmount: { fontSize: 16, fontWeight: '700', color: '#111827' },
 
   catList: {},
-
-  empty: { alignItems: 'center', paddingVertical: 36 },
-  emptyIcon: { fontSize: 40, marginBottom: 12 },
-  emptyText: { fontSize: 14, color: '#9CA3AF' },
 
   trendLegend: { flexDirection: 'row', gap: 16, marginBottom: 12 },
   trendLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
