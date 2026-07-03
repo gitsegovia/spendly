@@ -25,6 +25,7 @@ export default function CategoriesScreen() {
 
   const expenses = categories.filter((c) => c.type === 'expense');
   const incomes = categories.filter((c) => c.type === 'income');
+  const savings = categories.filter((c) => c.type === 'saving');
 
   function openAdd(type: TransactionType) {
     setEditTarget(null);
@@ -79,6 +80,15 @@ export default function CategoriesScreen() {
             categories={incomes}
             accentColor="#10B981"
             onAdd={() => openAdd('income')}
+            onEdit={openEdit}
+            onDelete={setDeleteTarget}
+            t={t}
+          />
+          <CategorySection
+            title={t('categories_manage.saving_section')}
+            categories={savings}
+            accentColor="#0EA5E9"
+            onAdd={() => openAdd('saving')}
             onEdit={openEdit}
             onDelete={setDeleteTarget}
             t={t}

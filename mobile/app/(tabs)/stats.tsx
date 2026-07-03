@@ -7,9 +7,10 @@ import { categoryLabel } from '../../src/lib/categoryName';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useMonthlyStats, CategoryStat } from '../../src/hooks/useMonthlyStats';
 import { useMonthlyTrend } from '../../src/hooks/useMonthlyTrend';
-import { useFreemium } from '../../src/hooks/useFreemium';
+import { useMonthNavigation } from '../../src/hooks/useMonthNavigation';
 import { useDatabase } from '../../src/contexts/DatabaseContext';
 import { MonthNavigator } from '../../src/components/MonthNavigator';
+import { HeaderActions } from '../../src/components/HeaderActions';
 import { PaywallModal } from '../../src/components/PaywallModal';
 import { EmptyState } from '../../src/components/EmptyState';
 
@@ -23,33 +24,16 @@ export default function StatsScreen() {
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
   const { profile } = useAuth();
-  const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
+  const { year, month, prevMonth, nextMonth, canGoPrev, isAtFreeLimit } = useMonthNavigation();
   const [showPaywall, setShowPaywall] = useState(false);
 
   const { stats, loading: statsLoading } = useMonthlyStats(year, month);
   const { trend, loading: trendLoading } = useMonthlyTrend(year, month, profile?.language ?? 'es');
-  const { isMonthLocked } = useFreemium();
   const { syncStatus, sync } = useDatabase();
 
   const currency = profile?.currency ?? 'USD';
   const lang = profile?.language ?? 'es';
   const monthName = (MONTH_NAMES[lang] ?? MONTH_NAMES['es']!)[month - 1];
-  const prevMonthYear = month === 1 ? year - 1 : year;
-  const prevMonthNum = month === 1 ? 12 : month - 1;
-  const isAtFreeLimit = isMonthLocked(prevMonthYear, prevMonthNum);
-
-  function prevMonth() {
-    if (month === 1) { setYear(y => y - 1); setMonth(12); }
-    else setMonth(m => m - 1);
-  }
-  function nextMonth() {
-    const n = new Date();
-    if (year === n.getFullYear() && month === n.getMonth() + 1) return;
-    if (month === 12) { setYear(y => y + 1); setMonth(1); }
-    else setMonth(m => m + 1);
-  }
 
   const balanceColor = stats.balance >= 0 ? '#111827' : '#EF4444';
   const savingsRate = stats.totalIncome > 0
@@ -101,13 +85,17 @@ export default function StatsScreen() {
         />
       }
     >
-      <Text style={styles.screenTitle}>{t('stats.title')}</Text>
+      <View style={styles.topRow}>
+        <Text style={styles.screenTitle}>{t('stats.title')}</Text>
+        <HeaderActions />
+      </View>
 
       <MonthNavigator
         year={year} month={month}
         onPrev={prevMonth} onNext={nextMonth}
         lang={profile?.language}
         isAtFreeLimit={isAtFreeLimit}
+        canGoPrev={canGoPrev}
         onUpgradePress={() => setShowPaywall(true)}
       />
 
@@ -141,6 +129,17 @@ export default function StatsScreen() {
                   {currency} {stats.totalExpenses.toFixed(2)}
                 </Text>
               </View>
+              {stats.totalSavings > 0 && (
+                <>
+                  <View style={styles.heroPillDivider} />
+                  <View style={styles.heroPill}>
+                    <Text style={styles.heroPillLabel}>{t('savings.title')}</Text>
+                    <Text style={[styles.heroPillAmount, { color: '#0EA5E9' }]}>
+                      {currency} {stats.totalSavings.toFixed(2)}
+                    </Text>
+                  </View>
+                </>
+              )}
             </View>
 
             {stats.totalIncome > 0 && (
@@ -318,7 +317,11 @@ const rowStyles = StyleSheet.create({
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F9FAFB' },
   content: { paddingHorizontal: 20, paddingBottom: 20 },
-  screenTitle: { fontSize: 24, fontWeight: '700', color: '#111827', marginBottom: 4 },
+  screenTitle: { fontSize: 24, fontWeight: '700', color: '#111827' },
+  topRow: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', marginBottom: 4,
+  },
 
   heroCard: {
     backgroundColor: '#fff', borderRadius: 20, padding: 20, marginTop: 12,

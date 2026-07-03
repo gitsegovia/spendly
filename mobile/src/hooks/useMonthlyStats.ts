@@ -15,23 +15,32 @@ export interface CategoryStat {
 export interface MonthlyStats {
   totalExpenses: number;
   totalIncome: number;
+  totalSavings: number;
   balance: number;
   expensesByCategory: CategoryStat[];
   incomeByCategory: CategoryStat[];
+  savingsByCategory: CategoryStat[];
 }
 
+const EMPTY_STATS: MonthlyStats = {
+  totalExpenses: 0,
+  totalIncome: 0,
+  totalSavings: 0,
+  balance: 0,
+  expensesByCategory: [],
+  incomeByCategory: [],
+  savingsByCategory: [],
+};
+
 export function useMonthlyStats(year: number, month: number) {
-  const [stats, setStats] = useState<MonthlyStats>({
-    totalExpenses: 0,
-    totalIncome: 0,
-    balance: 0,
-    expensesByCategory: [],
-    incomeByCategory: [],
-  });
+  const [stats, setStats] = useState<MonthlyStats>(EMPTY_STATS);
   const [loading, setLoading] = useState(true);
 
   const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-  const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+  // Construir la fecha en local — toISOString() convierte a UTC y en zonas UTC+
+  // el último día del mes quedaría excluido del rango
+  const lastDay = new Date(year, month, 0).getDate();
+  const endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
   useEffect(() => {
     const subscription = database.collections
@@ -44,7 +53,7 @@ export function useMonthlyStats(year: number, month: number) {
       .observe()
       .subscribe(async (txRecords) => {
         if (txRecords.length === 0) {
-          setStats({ totalExpenses: 0, totalIncome: 0, balance: 0, expensesByCategory: [], incomeByCategory: [] });
+          setStats(EMPTY_STATS);
           setLoading(false);
           return;
         }
@@ -59,45 +68,46 @@ export function useMonthlyStats(year: number, month: number) {
 
         let totalExpenses = 0;
         let totalIncome = 0;
+        let totalSavings = 0;
         const catStats: Record<string, CategoryStat> = {};
         const incStats: Record<string, CategoryStat> = {};
+        const savStats: Record<string, CategoryStat> = {};
+
+        const addToBucket = (bucket: Record<string, CategoryStat>, cat: CategoryModel, amount: number) => {
+          bucket[cat.id] = bucket[cat.id] ?? {
+            category_id: cat.id,
+            category_name: cat.name,
+            category_color: cat.color,
+            category_icon: cat.icon ?? '',
+            total: 0,
+          };
+          bucket[cat.id].total += amount;
+        };
 
         for (const t of txRecords) {
           const amount = t.amount;
           const cat = catMap.get(t.categoryId);
           if (t.type === 'expense') {
             totalExpenses += amount;
-            if (cat) {
-              catStats[cat.id] = catStats[cat.id] ?? {
-                category_id: cat.id,
-                category_name: cat.name,
-                category_color: cat.color,
-                category_icon: cat.icon ?? '',
-                total: 0,
-              };
-              catStats[cat.id].total += amount;
-            }
+            if (cat) addToBucket(catStats, cat, amount);
+          } else if (t.type === 'saving') {
+            totalSavings += amount;
+            if (cat) addToBucket(savStats, cat, amount);
           } else {
             totalIncome += amount;
-            if (cat) {
-              incStats[cat.id] = incStats[cat.id] ?? {
-                category_id: cat.id,
-                category_name: cat.name,
-                category_color: cat.color,
-                category_icon: cat.icon ?? '',
-                total: 0,
-              };
-              incStats[cat.id].total += amount;
-            }
+            if (cat) addToBucket(incStats, cat, amount);
           }
         }
 
         setStats({
           totalExpenses,
           totalIncome,
-          balance: totalIncome - totalExpenses,
+          totalSavings,
+          // El ahorro sale del balance disponible del mes
+          balance: totalIncome - totalExpenses - totalSavings,
           expensesByCategory: Object.values(catStats).sort((a, b) => b.total - a.total),
           incomeByCategory: Object.values(incStats).sort((a, b) => b.total - a.total),
+          savingsByCategory: Object.values(savStats).sort((a, b) => b.total - a.total),
         });
         setLoading(false);
       });

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  Modal, ScrollView, KeyboardAvoidingView, Platform,
+  Modal, ScrollView, KeyboardAvoidingView, Platform, Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -30,7 +30,8 @@ interface Props {
     amount: number,
     date: string,
     notes: string,
-    items: { name: string; amount: number; quantity: number }[]
+    items: { name: string; amount: number; quantity: number }[],
+    recurring?: boolean
   ) => Promise<void>;
   onUpdate?: (
     id: string,
@@ -70,6 +71,7 @@ export function AddTransactionModal({ visible, onClose, onSave, onUpdate, initia
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
+  const [recurring, setRecurring] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -107,6 +109,7 @@ export function AddTransactionModal({ visible, onClose, onSave, onUpdate, initia
     const today = new Date();
     setCategoryId(''); setAmount(''); setNotes(''); setErrorMsg('');
     setSelectedDate(today); setDate(today.toISOString().split('T')[0]); setItems([]);
+    setRecurring(false);
   }
 
   function handleAmountChange(text: string) {
@@ -169,7 +172,7 @@ export function AddTransactionModal({ visible, onClose, onSave, onUpdate, initia
       if (isEditing && onUpdate && initialValues) {
         await onUpdate(initialValues.id, categoryId, parsedAmount, date, notes, parsedItems);
       } else {
-        await onSave(categoryId, parsedAmount, date, notes, parsedItems);
+        await onSave(categoryId, parsedAmount, date, notes, parsedItems, recurring);
       }
       reset();
       onClose();
@@ -191,7 +194,9 @@ export function AddTransactionModal({ visible, onClose, onSave, onUpdate, initia
           <Text style={styles.title}>
             {isEditing
               ? t('common.edit')
-              : type === 'expense' ? t('modal.new_expense') : t('modal.new_income')}
+              : type === 'expense' ? t('modal.new_expense')
+              : type === 'saving' ? t('modal.new_saving')
+              : t('modal.new_income')}
           </Text>
           <TouchableOpacity onPress={handleSave} disabled={loading}>
             <Text style={[styles.save, loading && styles.disabled]}>{t('common.save')}</Text>
@@ -270,6 +275,22 @@ export function AddTransactionModal({ visible, onClose, onSave, onUpdate, initia
               </TouchableOpacity>
             ))}
           </ScrollView>
+
+          {/* Recurrente (solo al crear) */}
+          {!isEditing && (
+            <View style={styles.recurringRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.recurringLabel}>{t('modal.recurring_toggle')}</Text>
+                <Text style={styles.recurringHint}>{t('modal.recurring_hint')}</Text>
+              </View>
+              <Switch
+                value={recurring}
+                onValueChange={setRecurring}
+                trackColor={{ false: '#E5E7EB', true: '#C7D2FE' }}
+                thumbColor={recurring ? '#4F46E5' : '#9CA3AF'}
+              />
+            </View>
+          )}
 
           {/* Notas */}
           <Text style={styles.label}>{t('modal.notes_optional')}</Text>
@@ -374,6 +395,12 @@ const styles = StyleSheet.create({
   dateSheetTitle: { fontSize: 16, fontWeight: '600', color: '#111827' },
   dateSheetDone: { fontSize: 16, color: '#4F46E5', fontWeight: '600' },
   catRow: { flexDirection: 'row', marginBottom: 4 },
+  recurringRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16,
+    backgroundColor: '#F9FAFB', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10,
+  },
+  recurringLabel: { fontSize: 14, fontWeight: '600', color: '#374151' },
+  recurringHint: { fontSize: 12, color: '#9CA3AF', marginTop: 2 },
   catChip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,

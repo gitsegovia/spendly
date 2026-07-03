@@ -11,14 +11,19 @@ interface Props {
   lang?: string;
   isAtFreeLimit?: boolean;
   onUpgradePress?: () => void;
+  /** false cuando se llegó al mes de registro del usuario: la flecha se deshabilita */
+  canGoPrev?: boolean;
 }
 
-export function MonthNavigator({ year, month, onPrev, onNext, lang = 'es', isAtFreeLimit, onUpgradePress }: Props) {
+export function MonthNavigator({
+  year, month, onPrev, onNext, lang = 'es', isAtFreeLimit, onUpgradePress, canGoPrev = true,
+}: Props) {
   const months = lang === 'en' ? MONTHS_EN : MONTHS_ES;
   const now = new Date();
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
 
   function handlePrev() {
+    if (!canGoPrev) return;
     if (isAtFreeLimit) {
       onUpgradePress?.();
     } else {
@@ -28,8 +33,10 @@ export function MonthNavigator({ year, month, onPrev, onNext, lang = 'es', isAtF
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={handlePrev} style={styles.arrow}>
-        {isAtFreeLimit ? (
+      <TouchableOpacity onPress={handlePrev} style={styles.arrow} disabled={!canGoPrev}>
+        {!canGoPrev ? (
+          <Text style={[styles.arrowText, styles.disabled]}>‹</Text>
+        ) : isAtFreeLimit ? (
           <Text style={styles.lockIcon}>🔒</Text>
         ) : (
           <Text style={styles.arrowText}>‹</Text>

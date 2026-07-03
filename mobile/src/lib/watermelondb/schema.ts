@@ -1,7 +1,7 @@
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
 export const schema = appSchema({
-  version: 3,
+  version: 4,
   tables: [
     tableSchema({
       name: 'categories',
@@ -25,6 +25,7 @@ export const schema = appSchema({
         { name: 'amount', type: 'number' },
         { name: 'date', type: 'string', isIndexed: true },
         { name: 'notes', type: 'string', isOptional: true },
+        { name: 'recurring_id', type: 'string', isOptional: true, isIndexed: true },
         { name: 'user_id', type: 'string', isIndexed: true },
         { name: 'is_deleted', type: 'boolean' },
         { name: 'created_at', type: 'number' },
@@ -38,6 +39,21 @@ export const schema = appSchema({
         { name: 'name', type: 'string' },
         { name: 'amount', type: 'number' },
         { name: 'quantity', type: 'number' },
+        { name: 'is_deleted', type: 'boolean' },
+        { name: 'created_at', type: 'number' },
+        { name: 'updated_at', type: 'number' },
+      ],
+    }),
+    tableSchema({
+      name: 'recurring_templates',
+      columns: [
+        { name: 'category_id', type: 'string', isIndexed: true },
+        { name: 'type', type: 'string' },
+        { name: 'amount', type: 'number' },
+        { name: 'day_of_month', type: 'number' },
+        { name: 'notes', type: 'string', isOptional: true },
+        { name: 'is_active', type: 'boolean' },
+        { name: 'user_id', type: 'string', isIndexed: true },
         { name: 'is_deleted', type: 'boolean' },
         { name: 'created_at', type: 'number' },
         { name: 'updated_at', type: 'number' },

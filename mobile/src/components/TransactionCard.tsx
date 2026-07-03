@@ -17,9 +17,11 @@ export function TransactionCard({ transaction, currency, onDelete, onEdit }: Pro
   const { t, i18n } = useTranslation();
   const [showConfirm, setShowConfirm] = useState(false);
   const hasItems = transaction.items.length > 0;
-  const isExpense = transaction.type === 'expense';
-  const amountColor = isExpense ? '#EF4444' : '#10B981';
-  const amountPrefix = isExpense ? '-' : '+';
+  const amountColor = transaction.type === 'expense' ? '#EF4444'
+    : transaction.type === 'saving' ? '#0EA5E9'
+    : '#10B981';
+  // Ahorro en azul con '+': es dinero que se acumula, no un gasto
+  const amountPrefix = transaction.type === 'expense' ? '-' : '+';
 
   return (
     <>

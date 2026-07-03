@@ -7,15 +7,15 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../../src/contexts/AuthContext';
-import { useFreemium } from '../../src/hooks/useFreemium';
-import { useNotificationsContext } from '../../src/contexts/NotificationsContext';
-import { useBiometric } from '../../src/contexts/BiometricContext';
-import { AppMessage } from '../../src/components/AppMessage';
-import { PaywallModal } from '../../src/components/PaywallModal';
-import { supabase } from '../../src/lib/supabase/client';
-import { exportTransactionsCsv } from '../../src/lib/exportCsv';
-import i18n from '../../src/lib/i18n';
+import { useAuth } from '../src/contexts/AuthContext';
+import { useFreemium } from '../src/hooks/useFreemium';
+import { useNotificationsContext } from '../src/contexts/NotificationsContext';
+import { AppMessage } from '../src/components/AppMessage';
+import { PaywallModal } from '../src/components/PaywallModal';
+import { supabase } from '../src/lib/supabase/client';
+import { devSetPlan } from '../src/lib/purchases';
+import { exportTransactionsCsv } from '../src/lib/exportCsv';
+import i18n from '../src/lib/i18n';
 
 const CURRENCIES = ['USD', 'EUR', 'MXN', 'COP', 'ARS', 'PEN', 'CLP'];
 const LANGUAGES = [
@@ -28,10 +28,9 @@ export default function SettingsScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { session, profile, signOut } = useAuth();
+  const { session, profile, refreshProfile } = useAuth();
 
   const { isPremium } = useFreemium();
-  const { biometricEnabled, biometricAvailable, setBiometricEnabled } = useBiometric();
   const {
     scheduled, hour: savedHour, minute: savedMinute,
     loading: notifLoading, permissionDenied, schedule, cancel,
@@ -125,9 +124,20 @@ export default function SettingsScreen() {
     }
   }
 
+  const [togglingPlan, setTogglingPlan] = useState(false);
+
+  async function handleDevPlanToggle(value: boolean) {
+    if (!session || togglingPlan) return;
+    setTogglingPlan(true);
+    try {
+      await devSetPlan(session.user.id, value ? 'premium' : 'free');
+      await refreshProfile();
+    } finally {
+      setTogglingPlan(false);
+    }
+  }
+
   const changed = profile?.currency !== currency || profile?.language !== language;
-  const email = session?.user.email ?? '';
-  const initials = email.slice(0, 2).toUpperCase();
 
   const timeDate = (() => {
     const d = new Date();
@@ -137,38 +147,29 @@ export default function SettingsScreen() {
 
   return (
     <View style={[styles.outerContainer, { paddingTop: insets.top }]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Text style={styles.back}>‹ {t('common.back')}</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{t('settings.title')}</Text>
+        <View style={{ width: 60 }} />
+      </View>
+
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <Text style={styles.screenTitle}>{t('settings.title')}</Text>
-
-        {/* Avatar + cuenta */}
+        {/* Gestión */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('settings.account')}</Text>
-
-          <View style={[styles.row, styles.avatarRow]}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{initials}</Text>
-            </View>
-            <View style={styles.avatarInfo}>
-              <Text style={styles.avatarEmail} numberOfLines={1}>{email}</Text>
-              <View style={[styles.planBadge, profile?.plan === 'premium' ? styles.planPremium : styles.planFree]}>
-                <Text style={[styles.planText, profile?.plan === 'premium' ? styles.planTextPremium : styles.planTextFree]}>
-                  {profile?.plan === 'premium' ? t('settings.plan_premium') : t('settings.plan_free')}
-                </Text>
-              </View>
-            </View>
-            {profile?.plan !== 'premium' && (
-              <TouchableOpacity style={styles.upgradeBtn} onPress={() => setShowPaywall(true)}>
-                <Text style={styles.upgradeBtnText}>{t('settings.upgrade')}</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
+          <Text style={styles.sectionTitle}>{t('settings.manage_section')}</Text>
           <TouchableOpacity style={styles.row} onPress={() => router.push('/categories')}>
             <Text style={styles.rowLabel}>{t('settings.categories_title')}</Text>
             <Text style={styles.rowChevron}>›</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.row, { borderBottomWidth: 0 }]} onPress={() => router.push('/budget')}>
+          <TouchableOpacity style={styles.row} onPress={() => router.push('/budget')}>
             <Text style={styles.rowLabel}>{t('budget.nav_row')}</Text>
+            <Text style={styles.rowChevron}>›</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.row, { borderBottomWidth: 0 }]} onPress={() => router.push('/planning')}>
+            <Text style={styles.rowLabel}>{t('planning.nav_row')}</Text>
             <Text style={styles.rowChevron}>›</Text>
           </TouchableOpacity>
         </View>
@@ -202,7 +203,7 @@ export default function SettingsScreen() {
               <TouchableOpacity
                 key={l.code}
                 style={[styles.chip, language === l.code && styles.chipSelected]}
-                onPress={() => { setLanguage(l.code); setMessage(null); }}
+                onPress={() => { setLanguage(l.code as 'es' | 'en'); setMessage(null); }}
               >
                 <Text style={[styles.chipText, language === l.code && styles.chipTextSelected]}>
                   {l.label}
@@ -289,22 +290,6 @@ export default function SettingsScreen() {
           )}
         </View>
 
-        {/* Seguridad */}
-        {biometricAvailable && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{t('settings.security')}</Text>
-            <View style={[styles.row, { borderBottomWidth: 0 }]}>
-              <Text style={styles.rowLabel}>{t('settings.biometric_lock')}</Text>
-              <Switch
-                value={biometricEnabled}
-                onValueChange={setBiometricEnabled}
-                trackColor={{ false: '#E5E7EB', true: '#C7D2FE' }}
-                thumbColor={biometricEnabled ? '#4F46E5' : '#9CA3AF'}
-              />
-            </View>
-          </View>
-        )}
-
         {/* Exportar */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('settings.export_title')}</Text>
@@ -327,10 +312,25 @@ export default function SettingsScreen() {
           <Text style={styles.exportHint}>{t('settings.export_csv_hint')}</Text>
         </View>
 
-        {/* Sesión */}
-        <TouchableOpacity style={styles.signOutBtn} onPress={signOut}>
-          <Text style={styles.signOutText}>{t('auth.sign_out')}</Text>
-        </TouchableOpacity>
+        {/* Desarrollo — solo visible en builds dev */}
+        {__DEV__ && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t('settings.dev_section')}</Text>
+            <View style={[styles.row, { borderBottomWidth: 0 }]}>
+              <Text style={styles.rowLabel}>{t('settings.dev_premium_toggle')}</Text>
+              {togglingPlan ? (
+                <ActivityIndicator size="small" color="#4F46E5" />
+              ) : (
+                <Switch
+                  value={isPremium}
+                  onValueChange={handleDevPlanToggle}
+                  trackColor={{ false: '#E5E7EB', true: '#C7D2FE' }}
+                  thumbColor={isPremium ? '#4F46E5' : '#9CA3AF'}
+                />
+              )}
+            </View>
+          </View>
+        )}
 
         {/* Versión */}
         <Text style={styles.versionText}>Spendly v{APP_VERSION}</Text>
@@ -345,8 +345,14 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   outerContainer: { flex: 1, backgroundColor: '#F9FAFB' },
   container: { flex: 1 },
-  content: { paddingHorizontal: 20, paddingBottom: 20, paddingTop: 12 },
-  screenTitle: { fontSize: 24, fontWeight: '700', color: '#111827', marginBottom: 16 },
+  content: { paddingHorizontal: 20, paddingBottom: 20 },
+
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingVertical: 14,
+  },
+  back: { fontSize: 16, color: '#4F46E5', fontWeight: '500', width: 60 },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
 
   section: {
     backgroundColor: '#fff', borderRadius: 14, paddingHorizontal: 16,
@@ -363,31 +369,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
   },
-  avatarRow: { gap: 12, paddingVertical: 14 },
   rowLabel: { fontSize: 15, color: '#374151' },
-  rowValue: { fontSize: 15, color: '#9CA3AF', maxWidth: '60%' },
   rowChevron: { fontSize: 20, color: '#9CA3AF' },
-
-  avatar: {
-    width: 46, height: 46, borderRadius: 23,
-    backgroundColor: '#EEF2FF', justifyContent: 'center', alignItems: 'center', flexShrink: 0,
-  },
-  avatarText: { fontSize: 17, fontWeight: '700', color: '#4F46E5' },
-  avatarInfo: { flex: 1, gap: 4 },
-  avatarEmail: { fontSize: 14, color: '#374151', fontWeight: '500' },
-
-  planBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 20, alignSelf: 'flex-start' },
-  planFree: { backgroundColor: '#F3F4F6' },
-  planPremium: { backgroundColor: '#FEF3C7' },
-  planText: { fontSize: 11, fontWeight: '700' },
-  planTextFree: { color: '#6B7280' },
-  planTextPremium: { color: '#D97706' },
-
-  upgradeBtn: {
-    backgroundColor: '#4F46E5', borderRadius: 20,
-    paddingHorizontal: 12, paddingVertical: 6, flexShrink: 0,
-  },
-  upgradeBtnText: { color: '#fff', fontSize: 12, fontWeight: '700' },
 
   fieldLabel: { fontSize: 13, fontWeight: '600', color: '#374151', marginBottom: 10 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
@@ -432,12 +415,5 @@ const styles = StyleSheet.create({
     fontSize: 12, color: '#EF4444', paddingHorizontal: 4, paddingBottom: 10, lineHeight: 18,
   },
 
-  signOutBtn: {
-    height: 50, backgroundColor: '#fff', borderRadius: 14,
-    justifyContent: 'center', alignItems: 'center',
-    borderWidth: 1.5, borderColor: '#FEE2E2',
-  },
-  signOutText: { color: '#EF4444', fontSize: 15, fontWeight: '600' },
-
-  versionText: { textAlign: 'center', fontSize: 12, color: '#D1D5DB', marginTop: 16 },
+  versionText: { textAlign: 'center', fontSize: 12, color: '#D1D5DB', marginTop: 8 },
 });

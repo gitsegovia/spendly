@@ -121,6 +121,14 @@ export function CategoryFormModal({
                       {t('categories_manage.type_income')}
                     </Text>
                   </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.typeChip, type === 'saving' && styles.typeSavingActive]}
+                    onPress={() => setType('saving')}
+                  >
+                    <Text style={[styles.typeChipText, type === 'saving' && styles.typeSavingText]}>
+                      {t('categories_manage.type_saving')}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </>
             )}
@@ -204,6 +212,8 @@ const styles = StyleSheet.create({
   typeExpenseText: { color: '#EF4444', fontWeight: '700' },
   typeIncomeActive: { borderColor: '#10B981', backgroundColor: '#F0FDF4' },
   typeIncomeText: { color: '#10B981', fontWeight: '700' },
+  typeSavingActive: { borderColor: '#0EA5E9', backgroundColor: '#F0F9FF' },
+  typeSavingText: { color: '#0EA5E9', fontWeight: '700' },
 
   colorGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   colorDot: {

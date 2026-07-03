@@ -37,7 +37,8 @@
     "expenses": "Expenses",
     "income": "Income",
     "stats": "Stats",
-    "settings": "Settings"
+    "settings": "Settings",
+    "savings": "Savings"
   },
   "dashboard": {
     "title": "Summary",
@@ -98,7 +99,11 @@
     "salary": "Salary",
     "freelance": "Freelance",
     "other": "Other",
-    "income_other": "Other income"
+    "income_other": "Other income",
+    "emergency_fund": "Emergency fund",
+    "bank_account": "Bank account",
+    "cash": "Cash",
+    "saving_goal": "Saving goal"
   },
   "settings": {
     "title": "Settings",
@@ -123,7 +128,10 @@
     "export_title": "Export data",
     "export_csv": "Export CSV",
     "export_csv_hint": "Download all your transactions as a CSV file",
-    "export_error": "Export failed"
+    "export_error": "Export failed",
+    "dev_section": "Development",
+    "dev_premium_toggle": "Simulate Premium plan",
+    "manage_section": "Management"
   },
   "onboarding": {
     "tagline": "Take control of your finances",
@@ -157,7 +165,10 @@
     "invalid_amount": "Enter a valid amount",
     "items_over_total": "Items total ({{currency}} {{total}}) exceeds the total amount",
     "save_error": "An error occurred while saving",
-    "item_others": "Other"
+    "item_others": "Other",
+    "recurring_toggle": "Repeat monthly",
+    "recurring_hint": "Used to project your upcoming months",
+    "new_saving": "New savings contribution"
   },
   "transaction": {
     "delete_title": "Delete transaction",
@@ -186,7 +197,9 @@
     "empty_section": "No categories. Tap \"+ New\" to add one.",
     "save_error": "Error saving",
     "delete_title": "Delete category",
-    "delete_message": "Existing transactions will not be deleted."
+    "delete_message": "Existing transactions will not be deleted.",
+    "saving_section": "Savings",
+    "type_saving": "Saving"
   },
   "notifications": {
     "title": "Notifications",
@@ -234,6 +247,75 @@
     "history_benefit": "Full history with no limits",
     "export_benefit": "Export to PDF & CSV",
     "support_benefit": "Priority support",
-    "maybe_later": "Not now"
+    "maybe_later": "Not now",
+    "restore": "Restore purchase",
+    "processing": "Processing...",
+    "success_title": "You're Premium!",
+    "success_message": "Your full history and exports are now unlocked.",
+    "continue": "Continue",
+    "purchase_error": "Purchase could not be completed. Please try again.",
+    "nothing_to_restore": "No purchases found to restore.",
+    "simulated_notice": "Simulation mode — no real charges"
+  },
+  "planning": {
+    "title": "Planning",
+    "nav_row": "Recurring & projection",
+    "next_month": "Next month (estimated)",
+    "projected_savings": "Savings",
+    "projection_hint": "Based on your active recurring entries",
+    "plan_vs_real": "This month: plan vs actual",
+    "avg_3m": "3-month avg",
+    "paused": "Paused",
+    "no_templates": "No recurring entries",
+    "no_templates_hint": "Mark an expense or income as recurring when you create it, or add one here to see your upcoming months' projection.",
+    "add": "Add recurring",
+    "new_template": "New recurring entry",
+    "edit_template": "Edit recurring entry",
+    "amount_label": "Estimated monthly amount",
+    "day_label": "Day of month",
+    "active": "Active",
+    "delete": "Delete recurring entry",
+    "select_category": "Select a category",
+    "duplicate_template": "An active recurring entry already exists for that category",
+    "no_categories_for_type": "No categories of this type yet",
+    "type_expense": "Expense",
+    "type_income": "Income",
+    "type_saving": "Saving"
+  },
+  "savings": {
+    "title": "Savings",
+    "nav_row": "Savings",
+    "total_saved": "Total saved",
+    "this_month": "this month",
+    "saved_this_month": "Saved this month",
+    "by_type": "By savings type",
+    "month_contributions": "This month's contributions",
+    "add_contribution": "Add contribution",
+    "empty_title": "Start building your savings",
+    "empty_hint": "Track how much of your income goes to savings and where: emergency fund, bank, cash or a goal.",
+    "create_defaults": "Create savings types",
+    "create_defaults_note": "You can edit them or add more from Categories",
+    "delete_title": "Delete contribution",
+    "delete_message": "Are you sure you want to delete this savings contribution?",
+    "total_month": "Saved this month",
+    "total_filtered": "Filtered total",
+    "contribution_one": "contribution",
+    "contribution_many": "contributions",
+    "no_month": "No contributions this month",
+    "no_month_hint": "Add your first contribution with the button above"
+  },
+  "profile": {
+    "title": "Profile",
+    "member_since": "Member since",
+    "overall_balance": "Overall balance",
+    "available": "Available",
+    "change_password": "Change password",
+    "new_password": "New password",
+    "confirm_password": "Confirm password",
+    "update_password": "Update password",
+    "password_updated": "Password updated",
+    "password_mismatch": "Passwords don't match",
+    "password_too_short": "Password must be at least 6 characters",
+    "oauth_account": "Your account signs in with Google or Apple — the password is managed by that provider."
   }
 }

@@ -1,3 +1,4 @@
+import '../src/lib/silenceLogs';
 import { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
@@ -46,6 +47,9 @@ function AppContent() {
       <AuthGate />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="categories" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="planning" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="profile" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="settings" options={{ animation: 'slide_from_right' }} />
       </Stack>
       {isLocked && (
         <View style={StyleSheet.absoluteFill}>

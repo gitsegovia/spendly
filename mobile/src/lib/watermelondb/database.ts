@@ -7,6 +7,7 @@ import Category from './models/Category';
 import Transaction from './models/Transaction';
 import TransactionItem from './models/TransactionItem';
 import Budget from './models/Budget';
+import RecurringTemplate from './models/RecurringTemplate';
 
 // UUID v4 generator compatible with Supabase UUID columns (no native crypto required)
 function uuidv4(): string {
@@ -27,5 +28,5 @@ const adapter = new SQLiteAdapter({
 
 export const database = new Database({
   adapter,
-  modelClasses: [Category, Transaction, TransactionItem, Budget],
+  modelClasses: [Category, Transaction, TransactionItem, Budget, RecurringTemplate],
 });

@@ -1,13 +1,14 @@
 import { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  RefreshControl, TextInput, ScrollView,
+  RefreshControl, TextInput, ScrollView, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useTransactions, TransactionWithItems } from '../../src/hooks/useTransactions';
 import { useCategories } from '../../src/hooks/useCategories';
+import { useSavings } from '../../src/hooks/useSavings';
 import { useMonthNavigation } from '../../src/hooks/useMonthNavigation';
 import { useDatabase } from '../../src/contexts/DatabaseContext';
 import { TransactionCard } from '../../src/components/TransactionCard';
@@ -21,7 +22,16 @@ import { TransactionSkeleton } from '../../src/components/SkeletonLoader';
 import { EmptyState } from '../../src/components/EmptyState';
 import { categoryLabel } from '../../src/lib/categoryName';
 
-export default function IncomeScreen() {
+// Categorías de ahorro sugeridas al usar el módulo por primera vez.
+// Nombres en español: igual que las categorías default, se traducen vía categoryLabel.
+const DEFAULT_SAVING_CATEGORIES = [
+  { name: 'Fondo de emergencia', icon: '🛟', color: '#0EA5E9' },
+  { name: 'Cuenta bancaria', icon: '🏦', color: '#6366F1' },
+  { name: 'Efectivo', icon: '💵', color: '#22C55E' },
+  { name: 'Meta de ahorro', icon: '🎯', color: '#F97316' },
+];
+
+export default function SavingsScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
@@ -31,11 +41,26 @@ export default function IncomeScreen() {
   const [editingTransaction, setEditingTransaction] = useState<TransactionWithItems | null>(null);
   const [search, setSearch] = useState('');
   const [filterCategoryId, setFilterCategoryId] = useState<string | null>(null);
+  const [seeding, setSeeding] = useState(false);
 
-  const { transactions, loading, addTransaction, updateTransaction, deleteTransaction } = useTransactions('income', year, month);
-  const { categories } = useCategories('income');
+  const { transactions, loading, addTransaction, updateTransaction, deleteTransaction } = useTransactions('saving', year, month);
+  const { categories, loading: catsLoading, addCategory } = useCategories('saving');
+  const { totalAccumulated } = useSavings();
   const { syncStatus, sync } = useDatabase();
   const currency = profile?.currency ?? 'USD';
+
+  const hasCategories = categories.length > 0;
+
+  async function seedDefaults() {
+    setSeeding(true);
+    try {
+      for (const cat of DEFAULT_SAVING_CATEGORIES) {
+        await addCategory(cat.name, cat.icon, cat.color, 'saving');
+      }
+    } finally {
+      setSeeding(false);
+    }
+  }
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -60,19 +85,24 @@ export default function IncomeScreen() {
         onUpgradePress={() => setShowPaywall(true)}
       />
 
-      {/* Total card */}
+      {/* Total del mes + acumulado histórico */}
       <View style={styles.totalCard}>
         <View>
           <Text style={styles.totalLabel}>
-            {isFiltering ? t('income.total_filtered') : t('income.total_month')}
+            {isFiltering ? t('savings.total_filtered') : t('savings.total_month')}
           </Text>
           {!loading && (
             <Text style={styles.txCount}>
-              {filtered.length} {filtered.length === 1 ? 'transacción' : 'transacciones'}
+              {filtered.length} {filtered.length === 1 ? t('savings.contribution_one') : t('savings.contribution_many')}
             </Text>
           )}
         </View>
         <Text style={styles.totalAmount}>{currency} {total.toFixed(2)}</Text>
+      </View>
+
+      <View style={styles.accumCard}>
+        <Text style={styles.accumLabel}>{t('savings.total_saved')}</Text>
+        <Text style={styles.accumAmount}>{currency} {totalAccumulated.toFixed(2)}</Text>
       </View>
 
       {/* Búsqueda */}
@@ -93,7 +123,7 @@ export default function IncomeScreen() {
         )}
       </View>
 
-      {/* Filtro por categoría */}
+      {/* Filtro por tipo de ahorro */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -133,12 +163,41 @@ export default function IncomeScreen() {
         <>{[1, 2, 3, 4, 5].map((i) => <TransactionSkeleton key={i} />)}</>
       )}
     </>
-  ), [year, month, total, filtered.length, isFiltering, loading, search, filterCategoryId, categories, currency, isAtFreeLimit, canGoPrev, profile?.language]);
+  ), [year, month, total, totalAccumulated, filtered.length, isFiltering, loading, search, filterCategoryId, categories, currency, isAtFreeLimit, canGoPrev, profile?.language]);
+
+  // Primera vez: sin categorías de ahorro todavía
+  if (!catsLoading && !hasCategories) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.header}>
+          <Text style={styles.title}>{t('savings.title')}</Text>
+          <View style={styles.headerRight}>
+            <HeaderActions />
+          </View>
+        </View>
+        <View style={styles.emptySetup}>
+          <Text style={styles.emptyIcon}>🐷</Text>
+          <Text style={styles.emptyTitle}>{t('savings.empty_title')}</Text>
+          <Text style={styles.emptyHint}>{t('savings.empty_hint')}</Text>
+          <TouchableOpacity
+            style={[styles.primaryBtn, seeding && styles.primaryBtnDisabled]}
+            onPress={seedDefaults}
+            disabled={seeding}
+          >
+            {seeding
+              ? <ActivityIndicator color="#fff" />
+              : <Text style={styles.primaryBtnText}>{t('savings.create_defaults')}</Text>}
+          </TouchableOpacity>
+          <Text style={styles.emptyNote}>{t('savings.create_defaults_note')}</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>{t('income.title')}</Text>
+        <Text style={styles.title}>{t('savings.title')}</Text>
         <View style={styles.headerRight}>
           <SyncIndicator />
           <HeaderActions />
@@ -162,27 +221,27 @@ export default function IncomeScreen() {
           !loading
             ? isFiltering
               ? <EmptyState icon="🔍" title={t('common.no_results')} />
-              : <EmptyState icon="💰" title={t('income.no_month')} hint={t('income.no_month_hint')} />
+              : <EmptyState icon="🐷" title={t('savings.no_month')} hint={t('savings.no_month_hint')} />
             : null
         }
         refreshControl={
           <RefreshControl
             refreshing={syncStatus === 'syncing'}
             onRefresh={() => sync('manual')}
-            tintColor="#10B981"
-            colors={['#10B981']}
+            tintColor="#4F46E5"
+            colors={['#4F46E5']}
           />
         }
       />
 
-      <AddFab color="#10B981" onPress={() => setShowModal(true)} />
+      <AddFab color="#0EA5E9" onPress={() => setShowModal(true)} />
 
       <AddTransactionModal
         visible={showModal}
         onClose={() => setShowModal(false)}
         onSave={addTransaction}
         categories={categories}
-        type="income"
+        type="saving"
         currency={currency}
       />
       <AddTransactionModal
@@ -196,14 +255,10 @@ export default function IncomeScreen() {
           amount: Number(editingTransaction.amount),
           date: editingTransaction.date,
           notes: editingTransaction.notes ?? '',
-          items: editingTransaction.items.map((i) => ({
-            name: i.name,
-            amount: Number(i.amount),
-            quantity: Number(i.quantity),
-          })),
+          items: [],
         } : undefined}
         categories={categories}
-        type="income"
+        type="saving"
         currency={currency}
       />
       <PaywallModal visible={showPaywall} onClose={() => setShowPaywall(false)} />
@@ -224,14 +279,22 @@ const styles = StyleSheet.create({
   totalCard: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     backgroundColor: '#fff', borderRadius: 14,
-    paddingHorizontal: 18, paddingVertical: 14, marginBottom: 12,
+    paddingHorizontal: 18, paddingVertical: 14, marginBottom: 10,
     shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
-    borderLeftWidth: 4, borderLeftColor: '#10B981',
+    borderLeftWidth: 4, borderLeftColor: '#0EA5E9',
   },
   totalLabel: { fontSize: 12, color: '#6B7280', marginBottom: 2, fontWeight: '500' },
   txCount: { fontSize: 11, color: '#9CA3AF' },
-  totalAmount: { fontSize: 22, fontWeight: '800', color: '#10B981' },
+  totalAmount: { fontSize: 22, fontWeight: '800', color: '#0EA5E9' },
+
+  accumCard: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    backgroundColor: '#F0F9FF', borderRadius: 14,
+    paddingHorizontal: 18, paddingVertical: 10, marginBottom: 12,
+  },
+  accumLabel: { fontSize: 12, color: '#0369A1', fontWeight: '600' },
+  accumAmount: { fontSize: 15, fontWeight: '800', color: '#0EA5E9' },
 
   searchWrap: {
     flexDirection: 'row', alignItems: 'center',
@@ -250,9 +313,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20,
     borderWidth: 1.5, borderColor: '#E5E7EB', backgroundColor: '#fff',
   },
-  catChipActive: { borderColor: '#10B981', backgroundColor: '#F0FDF4' },
+  catChipActive: { borderColor: '#0EA5E9', backgroundColor: '#F0F9FF' },
   catChipText: { fontSize: 13, color: '#6B7280' },
-  catChipTextActive: { color: '#10B981', fontWeight: '600' },
+  catChipTextActive: { color: '#0EA5E9', fontWeight: '600' },
   catIcon: { fontSize: 13 },
   catDot: { width: 8, height: 8, borderRadius: 4 },
+
+  emptySetup: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, paddingBottom: 80 },
+  emptyIcon: { fontSize: 44, marginBottom: 14 },
+  emptyTitle: { fontSize: 17, fontWeight: '700', color: '#111827', marginBottom: 8, textAlign: 'center' },
+  emptyHint: { fontSize: 13, color: '#9CA3AF', textAlign: 'center', lineHeight: 19, marginBottom: 24 },
+  primaryBtn: {
+    backgroundColor: '#0EA5E9', borderRadius: 12,
+    paddingHorizontal: 24, paddingVertical: 14, minWidth: 220, alignItems: 'center',
+  },
+  primaryBtnDisabled: { backgroundColor: '#BAE6FD' },
+  primaryBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  emptyNote: { fontSize: 12, color: '#C4B5FD', marginTop: 12, textAlign: 'center' },
 });

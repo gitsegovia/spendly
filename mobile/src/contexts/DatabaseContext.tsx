@@ -33,6 +33,9 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
   const hadSession = useRef(false);
   // Ref para leer lastSyncedAt sin cerrar sobre state desactualizado
   const lastSyncedAtRef = useRef<number | null>(null);
+  // Ref para que el retry loop lea la sesión actual y no la capturada en el closure
+  const sessionRef = useRef(session);
+  useEffect(() => { sessionRef.current = session; }, [session]);
 
   const sync = async (reason?: string) => {
     if (isSyncing.current || !session) return;
@@ -64,6 +67,12 @@ export function DatabaseProvider({ children }: { children: React.ReactNode }) {
           const delay = RETRY_DELAYS[attempt];
           console.warn(`[DB] Sync error, retry in ${delay}ms (attempt ${attempt + 1})`, e);
           await new Promise(r => setTimeout(r, delay));
+          if (!sessionRef.current) {
+            console.log('[DB] Sync cancelado — sesión cerrada durante el retry');
+            setSyncStatus('idle');
+            isSyncing.current = false;
+            return;
+          }
         }
       }
     }

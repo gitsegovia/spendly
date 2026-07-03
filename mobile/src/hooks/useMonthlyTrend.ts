@@ -31,7 +31,10 @@ export function useMonthlyTrend(endYear: number, endMonth: number, lang = 'es') 
 
     const startDate = `${months[0].year}-${String(months[0].month).padStart(2, '0')}-01`;
     const lastMonth = months[months.length - 1];
-    const endDate = new Date(lastMonth.year, lastMonth.month, 0).toISOString().split('T')[0];
+    // Construir la fecha en local — toISOString() convierte a UTC y en zonas UTC+
+    // el último día del mes quedaría excluido del rango
+    const lastDay = new Date(lastMonth.year, lastMonth.month, 0).getDate();
+    const endDate = `${lastMonth.year}-${String(lastMonth.month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
     const subscription = database.collections
       .get<TransactionModel>('transactions')

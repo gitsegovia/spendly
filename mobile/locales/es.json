@@ -37,7 +37,8 @@
     "expenses": "Gastos",
     "income": "Ingresos",
     "stats": "Estadísticas",
-    "settings": "Ajustes"
+    "settings": "Ajustes",
+    "savings": "Ahorro"
   },
   "dashboard": {
     "title": "Resumen",
@@ -98,7 +99,11 @@
     "salary": "Salario",
     "freelance": "Freelance",
     "other": "Otro",
-    "income_other": "Otro ingreso"
+    "income_other": "Otro ingreso",
+    "emergency_fund": "Fondo de emergencia",
+    "bank_account": "Cuenta bancaria",
+    "cash": "Efectivo",
+    "saving_goal": "Meta de ahorro"
   },
   "settings": {
     "title": "Ajustes",
@@ -123,7 +128,10 @@
     "export_title": "Exportar datos",
     "export_csv": "Exportar CSV",
     "export_csv_hint": "Descargá todas tus transacciones en formato CSV",
-    "export_error": "Error al exportar"
+    "export_error": "Error al exportar",
+    "dev_section": "Desarrollo",
+    "dev_premium_toggle": "Simular plan Premium",
+    "manage_section": "Gestión"
   },
   "onboarding": {
     "tagline": "Tomá el control de tus finanzas",
@@ -157,7 +165,10 @@
     "invalid_amount": "Ingresá un monto válido",
     "items_over_total": "La suma de artículos ({{currency}} {{total}}) supera el monto total",
     "save_error": "Ocurrió un error al guardar",
-    "item_others": "Otros"
+    "item_others": "Otros",
+    "recurring_toggle": "Repetir cada mes",
+    "recurring_hint": "Se usará para proyectar tus próximos meses",
+    "new_saving": "Nuevo aporte a ahorro"
   },
   "transaction": {
     "delete_title": "Eliminar transacción",
@@ -186,7 +197,9 @@
     "empty_section": "Sin categorías. Toca \"+ Nuevo\" para agregar.",
     "save_error": "Error al guardar",
     "delete_title": "Eliminar categoría",
-    "delete_message": "Las transacciones existentes no se borrarán."
+    "delete_message": "Las transacciones existentes no se borrarán.",
+    "saving_section": "Ahorro",
+    "type_saving": "Ahorro"
   },
   "notifications": {
     "title": "Notificaciones",
@@ -234,6 +247,75 @@
     "history_benefit": "Historial completo sin límites",
     "export_benefit": "Exportar a PDF y CSV",
     "support_benefit": "Soporte prioritario",
-    "maybe_later": "Ahora no"
+    "maybe_later": "Ahora no",
+    "restore": "Restaurar compra",
+    "processing": "Procesando...",
+    "success_title": "¡Ya eres Premium!",
+    "success_message": "Tu historial completo y la exportación están desbloqueados.",
+    "continue": "Continuar",
+    "purchase_error": "No se pudo completar la compra. Intenta de nuevo.",
+    "nothing_to_restore": "No encontramos compras para restaurar.",
+    "simulated_notice": "Modo simulación — sin cargos reales"
+  },
+  "planning": {
+    "title": "Planificación",
+    "nav_row": "Recurrentes y proyección",
+    "next_month": "Próximo mes (estimado)",
+    "projected_savings": "Ahorro",
+    "projection_hint": "Basado en tus movimientos recurrentes activos",
+    "plan_vs_real": "Este mes: plan vs real",
+    "avg_3m": "Prom. 3 meses",
+    "paused": "Pausado",
+    "no_templates": "Sin movimientos recurrentes",
+    "no_templates_hint": "Marcá un gasto o ingreso como recurrente al crearlo, o agregá uno aquí para ver la proyección de tus próximos meses.",
+    "add": "Agregar recurrente",
+    "new_template": "Nuevo recurrente",
+    "edit_template": "Editar recurrente",
+    "amount_label": "Monto mensual estimado",
+    "day_label": "Día del mes",
+    "active": "Activo",
+    "delete": "Eliminar recurrente",
+    "select_category": "Seleccioná una categoría",
+    "duplicate_template": "Ya existe un recurrente activo para esa categoría",
+    "no_categories_for_type": "No hay categorías de este tipo todavía",
+    "type_expense": "Gasto",
+    "type_income": "Ingreso",
+    "type_saving": "Ahorro"
+  },
+  "savings": {
+    "title": "Ahorros",
+    "nav_row": "Ahorros",
+    "total_saved": "Total ahorrado",
+    "this_month": "este mes",
+    "saved_this_month": "Ahorrado este mes",
+    "by_type": "Por tipo de ahorro",
+    "month_contributions": "Aportes de este mes",
+    "add_contribution": "Registrar aporte",
+    "empty_title": "Empezá a construir tu ahorro",
+    "empty_hint": "Registrá cuánto de tus ingresos destinás a ahorro y a qué tipo: fondo de emergencia, banco, efectivo o una meta.",
+    "create_defaults": "Crear tipos de ahorro",
+    "create_defaults_note": "Podés editarlos o agregar más desde Categorías",
+    "delete_title": "Eliminar aporte",
+    "delete_message": "¿Seguro que querés eliminar este aporte de ahorro?",
+    "total_month": "Ahorrado este mes",
+    "total_filtered": "Total filtrado",
+    "contribution_one": "aporte",
+    "contribution_many": "aportes",
+    "no_month": "Sin aportes este mes",
+    "no_month_hint": "Registrá tu primer aporte con el botón de arriba"
+  },
+  "profile": {
+    "title": "Perfil",
+    "member_since": "Miembro desde",
+    "overall_balance": "Balance general",
+    "available": "Disponible",
+    "change_password": "Cambiar contraseña",
+    "new_password": "Nueva contraseña",
+    "confirm_password": "Confirmar contraseña",
+    "update_password": "Actualizar contraseña",
+    "password_updated": "Contraseña actualizada",
+    "password_mismatch": "Las contraseñas no coinciden",
+    "password_too_short": "La contraseña debe tener al menos 6 caracteres",
+    "oauth_account": "Tu cuenta usa Google o Apple para iniciar sesión — la contraseña se gestiona desde ese proveedor."
   }
 }

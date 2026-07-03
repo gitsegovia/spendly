@@ -8,12 +8,14 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useTransactions, TransactionWithItems } from '../../src/hooks/useTransactions';
 import { useCategories } from '../../src/hooks/useCategories';
-import { useFreemium } from '../../src/hooks/useFreemium';
+import { useMonthNavigation } from '../../src/hooks/useMonthNavigation';
 import { useDatabase } from '../../src/contexts/DatabaseContext';
 import { TransactionCard } from '../../src/components/TransactionCard';
 import { AddTransactionModal } from '../../src/components/AddTransactionModal';
 import { MonthNavigator } from '../../src/components/MonthNavigator';
 import { SyncIndicator } from '../../src/components/SyncIndicator';
+import { HeaderActions } from '../../src/components/HeaderActions';
+import { AddFab } from '../../src/components/AddFab';
 import { PaywallModal } from '../../src/components/PaywallModal';
 import { TransactionSkeleton } from '../../src/components/SkeletonLoader';
 import { EmptyState } from '../../src/components/EmptyState';
@@ -23,9 +25,7 @@ export default function ExpensesScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
-  const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
+  const { year, month, prevMonth, nextMonth, canGoPrev, isAtFreeLimit } = useMonthNavigation();
   const [showModal, setShowModal] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<TransactionWithItems | null>(null);
@@ -34,24 +34,8 @@ export default function ExpensesScreen() {
 
   const { transactions, loading, addTransaction, updateTransaction, deleteTransaction } = useTransactions('expense', year, month);
   const { categories } = useCategories('expense');
-  const { isMonthLocked } = useFreemium();
   const { syncStatus, sync } = useDatabase();
   const currency = profile?.currency ?? 'USD';
-
-  const prevMonthYear = month === 1 ? year - 1 : year;
-  const prevMonthNum = month === 1 ? 12 : month - 1;
-  const isAtFreeLimit = isMonthLocked(prevMonthYear, prevMonthNum);
-
-  function prevMonth() {
-    if (month === 1) { setYear(y => y - 1); setMonth(12); }
-    else setMonth(m => m - 1);
-  }
-  function nextMonth() {
-    const n = new Date();
-    if (year === n.getFullYear() && month === n.getMonth() + 1) return;
-    if (month === 12) { setYear(y => y + 1); setMonth(1); }
-    else setMonth(m => m + 1);
-  }
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -72,6 +56,7 @@ export default function ExpensesScreen() {
         onPrev={prevMonth} onNext={nextMonth}
         lang={profile?.language}
         isAtFreeLimit={isAtFreeLimit}
+        canGoPrev={canGoPrev}
         onUpgradePress={() => setShowPaywall(true)}
       />
 
@@ -148,7 +133,7 @@ export default function ExpensesScreen() {
         <>{[1, 2, 3, 4, 5].map((i) => <TransactionSkeleton key={i} />)}</>
       )}
     </>
-  ), [year, month, total, filtered.length, isFiltering, loading, search, filterCategoryId, categories, currency, isAtFreeLimit, profile?.language]);
+  ), [year, month, total, filtered.length, isFiltering, loading, search, filterCategoryId, categories, currency, isAtFreeLimit, canGoPrev, profile?.language]);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -156,9 +141,7 @@ export default function ExpensesScreen() {
         <Text style={styles.title}>{t('expenses.title')}</Text>
         <View style={styles.headerRight}>
           <SyncIndicator />
-          <TouchableOpacity style={styles.addBtn} onPress={() => setShowModal(true)}>
-            <Text style={styles.addText}>{t('expenses.add_short')}</Text>
-          </TouchableOpacity>
+          <HeaderActions />
         </View>
       </View>
 
@@ -191,6 +174,8 @@ export default function ExpensesScreen() {
           />
         }
       />
+
+      <AddFab color="#4F46E5" onPress={() => setShowModal(true)} />
 
       <AddTransactionModal
         visible={showModal}
@@ -234,10 +219,7 @@ const styles = StyleSheet.create({
   },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   title: { fontSize: 24, fontWeight: '700', color: '#111827' },
-  addBtn: { backgroundColor: '#4F46E5', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
-  addText: { color: '#fff', fontWeight: '600', fontSize: 14 },
-
-  list: { paddingHorizontal: 20, paddingBottom: 32 },
+  list: { paddingHorizontal: 20, paddingBottom: 100 },
 
   totalCard: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',

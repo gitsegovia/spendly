@@ -4,6 +4,8 @@ import { database } from '../lib/watermelondb/database';
 import TransactionModel from '../lib/watermelondb/models/Transaction';
 import TransactionItemModel from '../lib/watermelondb/models/TransactionItem';
 import CategoryModel from '../lib/watermelondb/models/Category';
+import RecurringTemplateModel from '../lib/watermelondb/models/RecurringTemplate';
+import { findActiveTemplate } from './useRecurring';
 import { Transaction, TransactionItem, TransactionType } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useFreemium } from './useFreemium';
@@ -23,7 +25,10 @@ export function useTransactions(type: TransactionType, year: number, month: numb
 
   const locked = isMonthLocked(year, month);
   const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-  const endDate = new Date(year, month, 0).toISOString().split('T')[0];
+  // Construir la fecha en local — toISOString() convierte a UTC y en zonas UTC+
+  // el último día del mes quedaría excluido del rango
+  const lastDay = new Date(year, month, 0).getDate();
+  const endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
   useEffect(() => {
     if (locked) {
@@ -112,11 +117,39 @@ export function useTransactions(type: TransactionType, year: number, month: numb
       date: string,
       notes: string,
       items: { name: string; amount: number; quantity: number }[],
+      recurring = false,
     ) => {
       if (!user) return;
       const now = Date.now();
 
+      // Si ya hay una plantilla recurrente activa para esta categoría+tipo,
+      // la transacción se vincula automáticamente (plan vs real)
+      const existingTemplate = await findActiveTemplate(categoryId, type);
+
       await database.write(async () => {
+        let recurringId = existingTemplate?.id ?? null;
+
+        // El usuario marcó "repetir cada mes" y no había plantilla: crearla
+        if (!recurringId && recurring) {
+          const template = await database.collections
+            .get<RecurringTemplateModel>('recurring_templates')
+            .create((record) => {
+              Object.assign(record._raw, {
+                category_id: categoryId,
+                type,
+                amount,
+                day_of_month: Number(date.slice(8, 10)) || 1,
+                notes: '',
+                is_active: true,
+                user_id: user.id,
+                is_deleted: false,
+                created_at: now,
+                updated_at: now,
+              });
+            });
+          recurringId = template.id;
+        }
+
         const tx = await database.collections.get<TransactionModel>('transactions').create((record) => {
           Object.assign(record._raw, {
             category_id: categoryId,
@@ -124,6 +157,7 @@ export function useTransactions(type: TransactionType, year: number, month: numb
             amount,
             date,
             notes: notes ?? '',
+            recurring_id: recurringId,
             user_id: user.id,
             is_deleted: false,
             created_at: now,

@@ -7,13 +7,15 @@ import { categoryLabel } from '../../src/lib/categoryName';
 import { formatDate } from '../../src/lib/dateFormat';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { useMonthlyStats, CategoryStat } from '../../src/hooks/useMonthlyStats';
+import { useMonthNavigation } from '../../src/hooks/useMonthNavigation';
 import { useRecentTransactions } from '../../src/hooks/useRecentTransactions';
 import { useBudgets } from '../../src/hooks/useBudgets';
-import { useFreemium } from '../../src/hooks/useFreemium';
+import { useProjection } from '../../src/hooks/useProjection';
 import { useDatabase } from '../../src/contexts/DatabaseContext';
 import { MonthNavigator } from '../../src/components/MonthNavigator';
 import { PaywallModal } from '../../src/components/PaywallModal';
 import { SyncIndicator } from '../../src/components/SyncIndicator';
+import { HeaderActions } from '../../src/components/HeaderActions';
 import { DashboardSkeleton } from '../../src/components/SkeletonLoader';
 import { EmptyState } from '../../src/components/EmptyState';
 
@@ -27,20 +29,14 @@ export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { profile } = useAuth();
-  const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
+  const { year, month, prevMonth, nextMonth, canGoPrev, isAtFreeLimit } = useMonthNavigation();
   const [showPaywall, setShowPaywall] = useState(false);
 
   const { stats, loading } = useMonthlyStats(year, month);
   const { transactions: recent } = useRecentTransactions(year, month);
   const { getBudgetForCategory } = useBudgets();
-  const { isMonthLocked } = useFreemium();
+  const { projection, activeTemplates } = useProjection();
   const { syncStatus, sync } = useDatabase();
-
-  const prevMonthYear = month === 1 ? year - 1 : year;
-  const prevMonthNum = month === 1 ? 12 : month - 1;
-  const isAtFreeLimit = isMonthLocked(prevMonthYear, prevMonthNum);
 
   const currency = profile?.currency ?? 'USD';
   const lang = profile?.language ?? 'es';
@@ -50,17 +46,6 @@ export default function DashboardScreen() {
     ? ((stats.totalIncome - stats.totalExpenses) / stats.totalIncome) * 100
     : 0;
   const hasData = stats.totalExpenses > 0 || stats.totalIncome > 0;
-
-  function prevMonth() {
-    if (month === 1) { setYear(y => y - 1); setMonth(12); }
-    else setMonth(m => m - 1);
-  }
-  function nextMonth() {
-    const n = new Date();
-    if (year === n.getFullYear() && month === n.getMonth() + 1) return;
-    if (month === 12) { setYear(y => y + 1); setMonth(1); }
-    else setMonth(m => m + 1);
-  }
 
   return (
     <ScrollView
@@ -77,7 +62,10 @@ export default function DashboardScreen() {
     >
       <View style={styles.topRow}>
         <Text style={styles.screenTitle}>{t('dashboard.title')}</Text>
-        <SyncIndicator />
+        <View style={styles.topActions}>
+          <SyncIndicator />
+          <HeaderActions />
+        </View>
       </View>
 
       <MonthNavigator
@@ -85,6 +73,7 @@ export default function DashboardScreen() {
         onPrev={prevMonth} onNext={nextMonth}
         lang={lang}
         isAtFreeLimit={isAtFreeLimit}
+        canGoPrev={canGoPrev}
         onUpgradePress={() => setShowPaywall(true)}
       />
 
@@ -118,6 +107,17 @@ export default function DashboardScreen() {
                   {currency} {stats.totalExpenses.toFixed(2)}
                 </Text>
               </View>
+              {stats.totalSavings > 0 && (
+                <>
+                  <View style={styles.heroPillDivider} />
+                  <View style={styles.heroPill}>
+                    <Text style={styles.heroPillLabel}>{t('savings.title')}</Text>
+                    <Text style={[styles.heroPillAmount, { color: '#0EA5E9' }]}>
+                      {currency} {stats.totalSavings.toFixed(2)}
+                    </Text>
+                  </View>
+                </>
+              )}
             </View>
 
             {stats.totalIncome > 0 && (
@@ -134,6 +134,41 @@ export default function DashboardScreen() {
               </View>
             )}
           </View>
+
+          {/* Acceso a Ahorros (si hay ahorro este mes) */}
+          {stats.totalSavings > 0 && (
+            <TouchableOpacity style={styles.projRow} onPress={() => router.push('/(tabs)/savings')}>
+              <View style={styles.projLeft}>
+                <Text style={styles.projIcon}>🐷</Text>
+                <View>
+                  <Text style={styles.projLabel}>{t('savings.saved_this_month')}</Text>
+                  <Text style={[styles.projAmount, { color: '#0EA5E9' }]}>
+                    +{currency} {stats.totalSavings.toFixed(2)}
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.projChevron}>›</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Proyección próximo mes (si hay recurrentes activos) */}
+          {activeTemplates.length > 0 && (
+            <TouchableOpacity style={styles.projRow} onPress={() => router.push('/planning')}>
+              <View style={styles.projLeft}>
+                <Text style={styles.projIcon}>🔁</Text>
+                <View>
+                  <Text style={styles.projLabel}>{t('planning.next_month')}</Text>
+                  <Text style={[
+                    styles.projAmount,
+                    { color: projection.balance >= 0 ? '#10B981' : '#EF4444' },
+                  ]}>
+                    {projection.balance >= 0 ? '+' : '-'}{currency} {Math.abs(projection.balance).toFixed(2)}
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.projChevron}>›</Text>
+            </TouchableOpacity>
+          )}
 
           {/* Expenses by category */}
           {stats.expensesByCategory.length > 0 && (
@@ -193,9 +228,9 @@ export default function DashboardScreen() {
                   <View style={styles.txRight}>
                     <Text style={[
                       styles.txAmount,
-                      { color: tx.type === 'income' ? '#10B981' : '#EF4444' },
+                      { color: tx.type === 'income' ? '#10B981' : tx.type === 'saving' ? '#0EA5E9' : '#EF4444' },
                     ]}>
-                      {tx.type === 'income' ? '+' : '-'}{currency} {tx.amount.toFixed(2)}
+                      {tx.type === 'expense' ? '-' : '+'}{currency} {tx.amount.toFixed(2)}
                     </Text>
                     <Text style={styles.txDate}>{formatDate(tx.date, lang)}</Text>
                   </View>
@@ -319,6 +354,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between',
     alignItems: 'center', marginBottom: 4,
   },
+  topActions: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   screenTitle: { fontSize: 24, fontWeight: '700', color: '#111827' },
 
   // Hero card
@@ -344,6 +380,20 @@ const styles = StyleSheet.create({
 
   savingsBadge: { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20 },
   savingsText: { fontSize: 13, fontWeight: '600' },
+
+  // Projection link card
+  projRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    backgroundColor: '#fff', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12,
+    marginTop: 12,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05, shadowRadius: 4, elevation: 2,
+  },
+  projLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  projIcon: { fontSize: 20 },
+  projLabel: { fontSize: 12, color: '#9CA3AF' },
+  projAmount: { fontSize: 16, fontWeight: '700', marginTop: 1 },
+  projChevron: { fontSize: 22, color: '#9CA3AF' },
 
   // Sections
   section: {

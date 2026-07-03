@@ -42,17 +42,17 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen
-        name="expenses"
-        options={{
-          title: t('tabs.expenses'),
-          tabBarIcon: ({ focused }) => <TabIcon emoji="💸" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
         name="income"
         options={{
           title: t('tabs.income'),
           tabBarIcon: ({ focused }) => <TabIcon emoji="💰" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
+        name="savings"
+        options={{
+          title: t('tabs.savings'),
+          tabBarIcon: ({ focused }) => <TabIcon emoji="🐷" focused={focused} />,
         }}
       />
       <Tabs.Screen
@@ -63,17 +63,17 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="expenses"
+        options={{
+          title: t('tabs.expenses'),
+          tabBarIcon: ({ focused }) => <TabIcon emoji="💸" focused={focused} />,
+        }}
+      />
+      <Tabs.Screen
         name="stats"
         options={{
           title: t('tabs.stats'),
           tabBarIcon: ({ focused }) => <TabIcon emoji="📊" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: t('tabs.settings'),
-          tabBarIcon: ({ focused }) => <TabIcon emoji="⚙️" focused={focused} />,
         }}
       />
     </Tabs>

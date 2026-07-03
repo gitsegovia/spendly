@@ -1,6 +1,6 @@
 export type Plan = 'free' | 'premium';
 export type Language = 'es' | 'en';
-export type TransactionType = 'expense' | 'income';
+export type TransactionType = 'expense' | 'income' | 'saving';
 export type SubscriptionStatus = 'active' | 'expired' | 'cancelled';
 export type SubscriptionProvider = 'apple' | 'google';
 

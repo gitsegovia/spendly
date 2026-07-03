@@ -35,6 +35,23 @@ function mapTransaction(r: any) {
     amount: Number(r.amount),
     date: r.date,
     notes: r.notes ?? '',
+    recurring_id: r.recurring_id ?? null,
+    user_id: r.user_id,
+    is_deleted: r.is_deleted ?? false,
+    created_at: toMs(r.created_at),
+    updated_at: toMs(r.updated_at),
+  };
+}
+
+function mapRecurring(r: any) {
+  return {
+    id: r.id,
+    category_id: r.category_id,
+    type: r.type,
+    amount: Number(r.amount),
+    day_of_month: Number(r.day_of_month),
+    notes: r.notes ?? '',
+    is_active: r.is_active ?? true,
     user_id: r.user_id,
     is_deleted: r.is_deleted ?? false,
     created_at: toMs(r.created_at),
@@ -102,7 +119,7 @@ export async function syncWithSupabase(): Promise<void> {
       const since = lastPulledAt ? toIso(lastPulledAt) : '1970-01-01T00:00:00.000Z';
       const now = Date.now();
 
-      const [catsResult, txsResult, budgetsResult] = await Promise.all([
+      const [catsResult, txsResult, budgetsResult, recurringResult] = await Promise.all([
         supabase
           .from('categories')
           .select('*')
@@ -115,6 +132,11 @@ export async function syncWithSupabase(): Promise<void> {
           .gt('updated_at', since),
         supabase
           .from('budgets')
+          .select('*')
+          .eq('user_id', userId)
+          .gt('updated_at', since),
+        supabase
+          .from('recurring_templates')
           .select('*')
           .eq('user_id', userId)
           .gt('updated_at', since),
@@ -137,11 +159,13 @@ export async function syncWithSupabase(): Promise<void> {
       if (txsResult.error) throw txsResult.error;
       if (itemsResult.error) throw itemsResult.error;
       if (budgetsResult.error) throw budgetsResult.error;
+      if (recurringResult.error) throw recurringResult.error;
 
       const cats = (catsResult.data ?? []).map(mapCategory);
       const txs = (txsResult.data ?? []).map(mapTransaction);
       const items = (itemsResult.data ?? []).map(mapItem);
       const budgets = (budgetsResult.data ?? []).map(mapBudget);
+      const recurring = (recurringResult.data ?? []).map(mapRecurring);
 
       return {
         changes: {
@@ -149,6 +173,7 @@ export async function syncWithSupabase(): Promise<void> {
           transactions: bucketRecords(txs, isFirstSync, lastPulledAt ?? 0),
           transaction_items: bucketRecords(items, isFirstSync, lastPulledAt ?? 0),
           budgets: bucketRecords(budgets, isFirstSync, lastPulledAt ?? 0),
+          recurring_templates: bucketRecords(recurring, isFirstSync, lastPulledAt ?? 0),
         },
         timestamp: now,
       };
@@ -158,145 +183,94 @@ export async function syncWithSupabase(): Promise<void> {
       const now = new Date().toISOString();
       const ch = changes as Record<string, { created: any[]; updated: any[]; deleted: string[] }>;
 
-      // --- categories ---
-      const cats = ch.categories ?? { created: [], updated: [], deleted: [] };
-      if (cats?.created?.length) {
-        const { error } = await supabase.from('categories').insert(
-          cats.created.map((r) => ({
-            id: r.id,
-            user_id: userId,
-            name: r.name,
-            icon: r.icon,
-            color: r.color,
-            type: r.type,
-            is_default: r.is_default,
-            created_at: toIso(r.created_at as number),
-            updated_at: toIso(r.updated_at as number),
-          })),
-        );
-        if (error) throw error;
-      }
-      if (cats?.updated?.length) {
-        for (const r of cats.updated) {
-          const { error } = await supabase.from('categories').update({
-            name: r.name,
-            icon: r.icon,
-            color: r.color,
-            type: r.type,
-            is_default: r.is_default,
-            updated_at: now,
-          }).eq('id', r.id);
-          if (error) throw error;
-        }
-      }
-      if (cats?.deleted?.length) {
-        const { error } = await supabase.from('categories')
-          .update({ is_deleted: true, updated_at: now })
-          .in('id', cats.deleted);
-        if (error) throw error;
-      }
+      // upsert (en vez de insert + update fila a fila): idempotente ante retries
+      // tras un push parcial, y un solo request por tabla
+      const toRows = (
+        bucket: { created: any[]; updated: any[] } | undefined,
+        mapRow: (r: any, updatedAt: string) => Record<string, unknown>,
+      ) => [
+        ...(bucket?.created ?? []).map((r) => mapRow(r, toIso(r.updated_at as number))),
+        ...(bucket?.updated ?? []).map((r) => mapRow(r, now)),
+      ];
 
-      // --- transactions (before items to satisfy FK) ---
-      const txs = ch.transactions ?? { created: [], updated: [], deleted: [] };
-      if (txs?.created?.length) {
-        const { error } = await supabase.from('transactions').insert(
-          txs.created.map((r) => ({
-            id: r.id,
-            user_id: userId,
-            category_id: r.category_id,
-            type: r.type,
-            amount: r.amount,
-            date: r.date,
-            notes: r.notes || null,
-            created_at: toIso(r.created_at as number),
-            updated_at: toIso(r.updated_at as number),
-          })),
-        );
+      const upsert = async (table: string, rows: Record<string, unknown>[]) => {
+        if (!rows.length) return;
+        const { error } = await supabase.from(table).upsert(rows);
         if (error) throw error;
-      }
-      if (txs?.updated?.length) {
-        for (const r of txs.updated) {
-          const { error } = await supabase.from('transactions').update({
-            category_id: r.category_id,
-            amount: r.amount,
-            date: r.date,
-            notes: r.notes || null,
-            updated_at: now,
-          }).eq('id', r.id);
-          if (error) throw error;
-        }
-      }
-      if (txs?.deleted?.length) {
-        const { error } = await supabase.from('transactions')
-          .update({ is_deleted: true, updated_at: now })
-          .in('id', txs.deleted);
-        if (error) throw error;
-      }
+      };
 
-      // --- transaction_items ---
-      const items = ch.transaction_items ?? { created: [], updated: [], deleted: [] };
-      if (items?.created?.length) {
-        const { error } = await supabase.from('transaction_items').insert(
-          items.created.map((r) => ({
-            id: r.id,
-            transaction_id: r.transaction_id,
-            name: r.name,
-            amount: r.amount,
-            quantity: r.quantity,
-            created_at: toIso(r.created_at as number),
-            updated_at: toIso(r.updated_at as number),
-          })),
-        );
-        if (error) throw error;
-      }
-      if (items?.updated?.length) {
-        for (const r of items.updated) {
-          const { error } = await supabase.from('transaction_items').update({
-            name: r.name,
-            amount: r.amount,
-            quantity: r.quantity,
-            updated_at: now,
-          }).eq('id', r.id);
-          if (error) throw error;
-        }
-      }
-      if (items?.deleted?.length) {
-        const { error } = await supabase.from('transaction_items')
+      const softDelete = async (table: string, ids: string[] | undefined) => {
+        if (!ids?.length) return;
+        const { error } = await supabase.from(table)
           .update({ is_deleted: true, updated_at: now })
-          .in('id', items.deleted);
+          .in('id', ids);
         if (error) throw error;
-      }
+      };
 
-      // --- budgets ---
-      const budgets = ch.budgets ?? { created: [], updated: [], deleted: [] };
-      if (budgets?.created?.length) {
-        const { error } = await supabase.from('budgets').insert(
-          budgets.created.map((r) => ({
-            id: r.id,
-            user_id: userId,
-            category_id: r.category_id,
-            amount: r.amount,
-            created_at: toIso(r.created_at as number),
-            updated_at: toIso(r.updated_at as number),
-          })),
-        );
-        if (error) throw error;
-      }
-      if (budgets?.updated?.length) {
-        for (const r of budgets.updated) {
-          const { error } = await supabase.from('budgets').update({
-            amount: r.amount,
-            updated_at: now,
-          }).eq('id', r.id);
-          if (error) throw error;
-        }
-      }
-      if (budgets?.deleted?.length) {
-        const { error } = await supabase.from('budgets')
-          .update({ is_deleted: true, updated_at: now })
-          .in('id', budgets.deleted);
-        if (error) throw error;
-      }
+      await upsert('categories', toRows(ch.categories, (r, updatedAt) => ({
+        id: r.id,
+        user_id: userId,
+        name: r.name,
+        icon: r.icon,
+        color: r.color,
+        type: r.type,
+        is_default: r.is_default,
+        created_at: toIso(r.created_at as number),
+        updated_at: updatedAt,
+      })));
+
+      // recurring_templates before transactions to satisfy FK de recurring_id
+      await upsert('recurring_templates', toRows(ch.recurring_templates, (r, updatedAt) => ({
+        id: r.id,
+        user_id: userId,
+        category_id: r.category_id,
+        type: r.type,
+        amount: r.amount,
+        day_of_month: r.day_of_month,
+        notes: r.notes || null,
+        is_active: r.is_active,
+        created_at: toIso(r.created_at as number),
+        updated_at: updatedAt,
+      })));
+
+      // transactions before items to satisfy FK
+      await upsert('transactions', toRows(ch.transactions, (r, updatedAt) => ({
+        id: r.id,
+        user_id: userId,
+        category_id: r.category_id,
+        type: r.type,
+        amount: r.amount,
+        date: r.date,
+        notes: r.notes || null,
+        recurring_id: r.recurring_id || null,
+        created_at: toIso(r.created_at as number),
+        updated_at: updatedAt,
+      })));
+
+      await upsert('transaction_items', toRows(ch.transaction_items, (r, updatedAt) => ({
+        id: r.id,
+        transaction_id: r.transaction_id,
+        name: r.name,
+        amount: r.amount,
+        quantity: r.quantity,
+        created_at: toIso(r.created_at as number),
+        updated_at: updatedAt,
+      })));
+
+      await upsert('budgets', toRows(ch.budgets, (r, updatedAt) => ({
+        id: r.id,
+        user_id: userId,
+        category_id: r.category_id,
+        amount: r.amount,
+        created_at: toIso(r.created_at as number),
+        updated_at: updatedAt,
+      })));
+
+      await softDelete('categories', ch.categories?.deleted);
+      await softDelete('transactions', ch.transactions?.deleted);
+      await softDelete('transaction_items', ch.transaction_items?.deleted);
+      await softDelete('budgets', ch.budgets?.deleted);
+      await softDelete('recurring_templates', ch.recurring_templates?.deleted);
     },
   });
 }
